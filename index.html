@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>오행핏 · Wellbeing Life</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<style>html,body{margin:0;height:100%;background:#f4f0fb}iframe{border:0;width:100%;height:100vh;height:100dvh;display:block}</style>
+</head>
+<body>
+<iframe src="app.html" title="Ohaeng Fit"></iframe>
+<script>
+window.PI_SESSION=null;
+(async function(){
+  try{
+    if(!window.Pi)return;
+    await Pi.init({version:"2.0"});
+    var a=await Pi.authenticate(["username"],function(){});
+    if(!a||!a.accessToken)return;
+    var r=await fetch("https://backend.appstudio-u7cm9zhmha0ruwv8.piappengine.com/pi/auth/v1/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({accessToken:a.accessToken})});
+    if(!r.ok)return;
+    var d=await r.json();
+    window.PI_SESSION={sessionToken:d.sessionToken,uid:d.user&&d.user.uid,username:d.user&&d.user.username};
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
