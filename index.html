@@ -19,10 +19,9 @@ window.piLogin=async function(){
     await PI_READY;if(!window.Pi)return null;
     var a=await Pi.authenticate(["username"],function(){});
     if(!a||!a.accessToken)return null;
-    var r=await fetch("https://backend.appstudio-u7cm9zhmha0ruwv8.piappengine.com/pi/auth/v1/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({accessToken:a.accessToken})});
-    if(!r.ok)return {username:a.user&&a.user.username};
-    var d=await r.json();
-    window.PI_SESSION={sessionToken:d.sessionToken,uid:d.user&&d.user.uid,username:(d.user&&d.user.username)||(a.user&&a.user.username)};
+    var un=a.user&&a.user.username,uid=a.user&&a.user.uid;
+    try{var r=await fetch("/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:a.accessToken})});if(r.ok){var d=await r.json();if(d&&d.ok){un=d.username;uid=d.uid}}}catch(e){}
+    window.PI_SESSION={token:a.accessToken,uid:uid,username:un};
     return window.PI_SESSION;
   }catch(e){return null}
 };

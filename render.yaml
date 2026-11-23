@@ -1,0 +1,12 @@
+services:
+  # 오행핏 메인넷
+  - type: web
+    name: ohaengfit
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: PI_VALIDATION_KEY
+        sync: false
