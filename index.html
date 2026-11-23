@@ -11,18 +11,21 @@
 <iframe src="app.html" title="Ohaeng Fit"></iframe>
 <script>
 window.PI_SESSION=null;
-(async function(){
+var PI_READY=(async function(){try{if(window.Pi)await Pi.init({version:"2.0"})}catch(e){}})();
+// 첫 화면의 "Pi로 로그인" 버튼을 누르면 로그인해요
+window.piLogin=async function(){
+  if(window.PI_SESSION)return window.PI_SESSION;
   try{
-    if(!window.Pi)return;
-    await Pi.init({version:"2.0"});
+    await PI_READY;if(!window.Pi)return null;
     var a=await Pi.authenticate(["username"],function(){});
-    if(!a||!a.accessToken)return;
+    if(!a||!a.accessToken)return null;
     var r=await fetch("https://backend.appstudio-u7cm9zhmha0ruwv8.piappengine.com/pi/auth/v1/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({accessToken:a.accessToken})});
-    if(!r.ok)return;
+    if(!r.ok)return {username:a.user&&a.user.username};
     var d=await r.json();
-    window.PI_SESSION={sessionToken:d.sessionToken,uid:d.user&&d.user.uid,username:d.user&&d.user.username};
-  }catch(e){}
-})();
+    window.PI_SESSION={sessionToken:d.sessionToken,uid:d.user&&d.user.uid,username:(d.user&&d.user.username)||(a.user&&a.user.username)};
+    return window.PI_SESSION;
+  }catch(e){return null}
+};
 </script>
 </body>
 </html>
