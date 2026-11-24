@@ -15,6 +15,6 @@ async function go(){b.disabled=true;m.textContent='로그인 중… / Signing in
   m.textContent='보내는 중… / Sending…';
   var r=await (await fetch('/a2u',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:a.accessToken})})).json();
   if(r.ok){m.style.color='#2f9e44';m.textContent=r.again?'✅ 이미 받으셨어요. 고마워요! / Already received':'✅ 받으셨어요! 도와주셔서 고마워요 🙏 / Received!'}
-  else{m.style.color='#c92a2a';m.textContent='잠시 후 다시 눌러 주세요 / Please try again ('+(r.why||'')+')';b.disabled=false}
+  else{m.style.color='#c92a2a';m.textContent='잠시 후 다시 눌러 주세요 / Please try again ('+(r.why||'')+')'+(r.msg?'\n'+r.msg:'');m.style.whiteSpace='pre-wrap';m.style.fontSize='13px';b.disabled=false}
  }catch(e){m.style.color='#c92a2a';m.textContent='Pi 브라우저에서 열어 주세요 / Open in Pi Browser';b.disabled=false}}
 </script></body></html>

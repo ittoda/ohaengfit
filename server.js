@@ -153,7 +153,7 @@ http.createServer(async (req, res) => {
     } catch (e) {
       console.log('a2u', e && (e.response && JSON.stringify(e.response.data) || e.message));
       try { const inc = await pi.getIncompleteServerPayments(); for (const p of inc || []) { try { if (p.transaction && p.transaction.txid) await pi.completePayment(p.identifier, p.transaction.txid); else await pi.cancelPayment(p.identifier) } catch (x) {} } } catch (x) {}
-      res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'pay', msg: String(e && e.message || e).slice(0, 200) }));
+      res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'pay', msg: String((e && e.response && e.response.data && JSON.stringify(e.response.data)) || (e && e.message) || e).slice(0, 300) }));
     }
   }
   const f = FILES[url];
