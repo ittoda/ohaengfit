@@ -127,7 +127,7 @@ select,input{width:100%;padding:11px;border:1px solid var(--ln);border-radius:10
 .pair{display:flex;align-items:center;justify-content:center;gap:10px}.pair>div{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}.pair span{width:64px;height:64px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:34px;overflow:hidden}.pair span img{width:100%;height:100%;object-fit:cover}.pair b{margin-top:6px;font-size:15px;word-break:break-all}.pair small{color:var(--sub);font-size:12px}.pair .hrt{flex:none;font-size:34px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.g2 .row{margin:4px 0;font-size:12px}.g2 .row>span:first-child{width:56px}
 .scr{position:relative;border-radius:14px;overflow:hidden}.scr canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:pointer;border-radius:14px}
-.stp{position:relative;text-align:center;margin:2px 0 0}.clv svg{width:150px;height:150px}.stp .seal{position:absolute;right:6px;bottom:8px}.seal{display:inline-block;border:3px double #c8283a;color:#c8283a;border-radius:9px;padding:4px 10px;font:800 15px serif;transform:rotate(-7deg);opacity:.9}.imgpop{position:fixed;inset:0;background:#000b;z-index:200;display:flex;align-items:center;justify-content:center;padding:18px}.imgpop .ip{background:#fff;border-radius:16px;padding:14px;max-width:420px;width:100%;text-align:center;max-height:94vh;overflow:auto}.imgpop img{width:100%;border-radius:10px;-webkit-touch-callout:default}.imgpop a.btn{text-decoration:none;box-sizing:border-box}
+.stp{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin:6px 6px 2px}.clv svg{width:64px;height:64px;display:block}.seal{display:inline-block;border:3px double #c8283a;color:#c8283a;border-radius:9px;padding:4px 10px;font:800 15px serif;transform:rotate(-7deg);opacity:.9}.imgpop{position:fixed;inset:0;background:#000b;z-index:200;display:flex;align-items:center;justify-content:center;padding:18px}.imgpop .ip{background:#fff;border-radius:16px;padding:14px;max-width:420px;width:100%;text-align:center;max-height:94vh;overflow:auto}.imgpop img{width:100%;border-radius:10px;-webkit-touch-callout:default}.imgpop a.btn{text-decoration:none;box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -493,30 +493,26 @@ function todayView(){var td=today(),T=dn(td[0],td[1],td[2]),di=dayIdx(T),te=SE[d
 
 
 
-var QSAVE=null,CLV=(function(){var leaf='M0 0C-4-14-24-22-24-34C-24-44-10-46 0-36C10-46 24-44 24-34C24-22 4-14 0 0Z',s='<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="-100 -100 200 200"><defs><radialGradient id="gl"><stop offset="0" stop-color="#fff6b0"/><stop offset="1" stop-color="#fff6b0" stop-opacity="0"/></radialGradient><linearGradient id="lf" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2f9e44"/><stop offset="1" stop-color="#8ce99a"/></linearGradient></defs><circle r="96" fill="url(#gl)"/>';
-  [[-62,-70],[66,-66],[-78,30],[80,34],[0,-90],[-40,78],[44,80]].forEach(function(p,k){s+='<path transform="translate('+p[0]+' '+p[1]+') scale(.6)" d="M0-10L3-3L10 0L3 3L0 10L-3 3L-10 0L-3-3Z" fill="'+(k%2?'#ffc9de':'#ffd43b')+'"/>'});
-  s+='<path d="M3 6Q12 40 30 60" stroke="#2b8a3e" stroke-width="7" fill="none" stroke-linecap="round"/><g transform="scale(1.45)">';
-  [0,90,180,270].forEach(function(a){s+='<g transform="rotate('+(a+45)+')"><path d="'+leaf+'" fill="url(#lf)" stroke="#2b8a3e" stroke-width="1.2"/><path d="M0-3L0-30" stroke="#ebfbee" stroke-width="1.6" opacity=".8"/><ellipse cx="-11" cy="-34" rx="5" ry="3" fill="#fff" opacity=".45"/></g>'});
-  s+='</g><circle r="6" fill="#2b8a3e"/>';
-  [[-82,-26],[82,-22],[-52,-82],[54,-84],[-70,64],[72,66]].forEach(function(p){s+='<g transform="translate('+p[0]+' '+p[1]+')"><circle r="14" fill="#ffd43b" stroke="#f59f00" stroke-width="1.5"/><circle cx="-4.5" cy="-3" r="1.8" fill="#5c3b00"/><circle cx="4.5" cy="-3" r="1.8" fill="#5c3b00"/><path d="M-6 3Q0 10 6 3" stroke="#5c3b00" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="-8" cy="3" r="2.4" fill="#ff8fab" opacity=".6"/><circle cx="8" cy="3" r="2.4" fill="#ff8fab" opacity=".6"/></g>'});
-  return s+'</svg>'})();
+var QSAVE=null,CLV='<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="-50 -50 100 100"><g fill="#3fa34d">'+[0,90,180,270].map(function(a){return '<path transform="rotate('+(a+45)+')" d="M0 0C-4-14-24-22-24-34C-24-44-10-46 0-36C10-46 24-44 24-34C24-22 4-14 0 0Z"/>'}).join('')+'</g><path d="M2 4Q8 26 20 40" stroke="#2e7d3a" stroke-width="5" fill="none" stroke-linecap="round"/></svg>';
 function clover(x,cx,cy,s){x.save();x.translate(cx,cy);x.scale(s/50,s/50);x.fillStyle='#3fa34d';for(var a=0;a<4;a++){x.save();x.rotate((a*90+45)*Math.PI/180);x.beginPath();x.moveTo(0,0);x.bezierCurveTo(-4,-14,-24,-22,-24,-34);x.bezierCurveTo(-24,-44,-10,-46,0,-36);x.bezierCurveTo(10,-46,24,-44,24,-34);x.bezierCurveTo(24,-22,4,-14,0,0);x.fill();x.restore()}
   x.strokeStyle='#2e7d3a';x.lineWidth=5;x.lineCap='round';x.beginPath();x.moveTo(2,4);x.quadraticCurveTo(8,26,20,40);x.stroke();x.restore()}
 function wrapTxt(x,s,maxW){var out=[],cur='',ws=LANG=='zh'||LANG=='ja'||LANG=='th'?s.split(''):s.split(' '),sep=ws.length>1&&s.indexOf(' ')>=0?' ':'';
   ws.forEach(function(w){var tt=cur?cur+sep+w:w;if(x.measureText(tt).width>maxW&&cur){out.push(cur);cur=w}else cur=tt});if(cur)out.push(cur);return out}
 function saveQuote(){if(!QSAVE)return;var W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d'),F='-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif';
-  var g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#f7f3ff');g.addColorStop(1,'#fff8ea');x.fillStyle=g;x.fillRect(0,0,W,H);
-  x.fillStyle='#fff';x.strokeStyle='#e4dcf5';x.lineWidth=4;x.beginPath();x.roundRect(70,70,W-140,H-140,48);x.fill();x.stroke();
-  x.textAlign='center';x.fillStyle='#5a3aa8';x.font='800 52px '+F;x.fillText('오행핏 · '+t('오늘의 글귀'),W/2,190);
-  x.fillStyle='#8a80a0';x.font='400 34px '+F;x.fillText(QSAVE.d.join('. '),W/2,250);
-  var im=new Image();im.onload=function(){x.drawImage(im,W/2-170,285,340,340);fin()};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(CLV);
+  x.fillStyle='#fffaf0';x.fillRect(0,0,W,H);
+  var gd=x.createLinearGradient(0,0,W,H);gd.addColorStop(0,'#c9a24a');gd.addColorStop(.5,'#f1dc9a');gd.addColorStop(1,'#b8892e');
+  x.strokeStyle=gd;x.lineWidth=22;x.strokeRect(40,40,W-80,H-80);x.lineWidth=4;x.strokeRect(78,78,W-156,H-156);
+  x.fillStyle=gd;[[78,78],[W-78,78],[78,H-78],[W-78,H-78]].forEach(function(p){x.save();x.translate(p[0],p[1]);x.rotate(Math.PI/4);x.fillRect(-16,-16,32,32);x.restore()});
+  x.textAlign='center';x.fillStyle='#b8892e';x.font='600 34px '+F;x.fillText('✦  오행핏 · Wellbeing Life  ✦',W/2,165);
+  x.fillStyle='#3a2a10';x.font='800 64px serif';x.fillText(t('오늘의 글귀'),W/2,250);
+  x.strokeStyle='#d8bd72';x.lineWidth=2;x.beginPath();x.moveTo(W/2-200,285);x.lineTo(W/2+200,285);x.stroke();
+  var im=new Image();im.onload=function(){x.drawImage(im,W/2-150,310,300,300);fin()};im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(CLV);
   function fin(){
-  x.fillStyle='#2a2440';x.font='500 50px '+F;var L=wrapTxt(x,'“'+QSAVE.q+'”',W-260),y=710-(L.length-3)*30;L.forEach(function(s){x.fillText(s,W/2,y);y+=80});
-  x.fillStyle='#7a7090';x.font='400 34px '+F;y+=30;wrapTxt(x,QSAVE.l,W-300).forEach(function(s){x.fillText(s,W/2,y);y+=52});
-  var nm=PINAME||t('파이오니어');x.save();x.translate(W-260,H-260);x.rotate(-.12);x.font='800 44px serif';var tw=Math.max(150,x.measureText(nm).width+60);
+  x.fillStyle='#2a2440';x.font='500 50px '+F;var L=wrapTxt(x,'“'+QSAVE.q+'”',W-280),y=780-(L.length-3)*40;L.forEach(function(s){x.fillText(s,W/2,y);y+=80});
+  x.textAlign='left';x.fillStyle='#5a4a30';x.font='600 38px '+F;x.fillText(QSAVE.d.join('. '),150,H-195);
+  var nm=PINAME||t('파이오니어');x.textAlign='center';x.save();x.translate(W-270,H-215);x.rotate(-.12);x.font='800 44px serif';var tw=Math.max(150,x.measureText(nm).width+60);
   x.strokeStyle='rgba(200,40,50,.85)';x.lineWidth=8;x.beginPath();x.roundRect(-tw/2,-60,tw,120,22);x.stroke();x.lineWidth=2;x.beginPath();x.roundRect(-tw/2+12,-48,tw-24,96,14);x.stroke();
   x.fillStyle='rgba(200,40,50,.9)';x.textBaseline='middle';x.fillText(nm,0,4);x.restore();
-  x.fillStyle='#b0a8c4';x.font='400 28px '+F;x.textAlign='left';x.fillText('ohaengfit.onrender.com',130,H-150);
   c.toBlob(function(b){var fn='ohaengfit_'+QSAVE.d.join('')+'.png',file;try{file=new File([b],fn,{type:'image/png'})}catch(e){}
     if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file]}).catch(function(){showImg(c,fn)})}else showImg(c,fn)},'image/png')}}
 function showImg(c,fn){var u=c.toDataURL('image/png'),d=document.createElement('div');d.className='imgpop';
