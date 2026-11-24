@@ -545,9 +545,18 @@ try{var sl=localStorage.getItem('lg');if(sl&&sl!='ko')setLang(sl)}catch(e){}
 try{var hd=document.querySelector('.hd');if(hd)hd.style.display='none';var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';var pp=document.querySelector('.w > p.p');if(pp)pp.style.display='none';
 var L=q.get('lang');if(L&&L!='ko'){if(!LTT[L])L='en';setLang(L)}
 if(q.get('bd'))g('bd').value=q.get('bd');if(q.get('bt')){g('bt').value=q.get('bt')}else if(g('nt'))g('nt').checked=true;if(q.get('sx')=='m')g('sx').selectedIndex=1;
+var FK=['jb','jw','bl','zd','sit','ph','st','ex','lf','sl','dv','dh','ft'],P0=null;try{P0=window.parent&&window.parent!==window?window.parent:null}catch(e){}
+var LF=null;try{LF=P0&&P0.LIFE}catch(e){}
+if(LF){FK.forEach(function(k){var e=g(k);if(e&&LF[k]!=null){e.value=LF[k];if(e.oninput)e.oninput()}})}
+window.editLife=function(){g('form').style.display='block';g('out').style.display='none';['pan2','pan3','pan4'].forEach(function(i){if(g(i))g(i).style.display='none'});step(2);scrollTo(0,0)};
 step(2);var og=window.go;window.go=function(){og.apply(this,arguments);if(!ME)return;
+ var o={};FK.forEach(function(k){var e=g(k);if(e)o[k]=e.value});try{if(P0&&P0.saveLife&&JSON.stringify(o)!==JSON.stringify(LF||{})){P0.saveLife(o);LF=o}}catch(e){}
+ if(p=='body'){[].slice.call(document.querySelectorAll('#out button')).forEach(function(b){if((b.getAttribute('onclick')||'').indexOf('openEx')>=0)b.remove()});
+  [].slice.call(document.querySelectorAll('#out .row[onclick]')).forEach(function(r){r.removeAttribute('onclick');r.style.cursor='default'});
+  [].slice.call(document.querySelectorAll('#out p')).forEach(function(x){if(/\u203a\s*$/.test(x.textContent))x.remove()})}
  if(p=='food'||p=='nut'){tab(2);if(p=='nut'){var hs=[].slice.call(document.querySelectorAll('#pan2 h2')),h=hs.filter(function(x){return x.innerHTML.indexOf('SPR')<0&&/영양|Supplement|サプリ|营养|dinh dưỡng|Compl|Nahrungs/i.test(x.textContent)})[0];if(h)setTimeout(function(){h.scrollIntoView({behavior:'smooth'})},200)}}
- else if(p=='ex'){var r=document.querySelector('#out .row[onclick]');if(r)setTimeout(function(){r.click()},200)}}}catch(e){}})();
+ else if(p=='ex'){var r=document.querySelector('#out .row[onclick]');if(r)setTimeout(function(){r.click()},200)}};
+if(LF)setTimeout(function(){window.go()},50)}catch(e){}})();
 </script>
 </body>
 </html>
