@@ -548,6 +548,7 @@ if(q.get('bd'))g('bd').value=q.get('bd');if(q.get('bt')){g('bt').value=q.get('bt
 var FK=['jb','jw','bl','zd','sit','ph','st','ex','lf','sl','dv','dh','ft'],P0=null;try{P0=window.parent&&window.parent!==window?window.parent:null}catch(e){}
 var LF=null;try{LF=P0&&P0.LIFE}catch(e){}
 if(LF){FK.forEach(function(k){var e=g(k);if(e&&LF[k]!=null){e.value=LF[k];if(e.oninput)e.oninput()}})}
+try{var h2=g('st2').querySelector('h2');h2.textContent=(P0&&P0.t)?P0.t('나의 하루 생활패턴'):'나의 하루 생활패턴'}catch(e){}
 window.editLife=function(){g('form').style.display='block';g('out').style.display='none';['pan2','pan3','pan4'].forEach(function(i){if(g(i))g(i).style.display='none'});step(2);scrollTo(0,0)};
 step(2);var og=window.go;window.go=function(){og.apply(this,arguments);if(!ME)return;
  var o={};FK.forEach(function(k){var e=g(k);if(e)o[k]=e.value});try{if(P0&&P0.saveLife&&JSON.stringify(o)!==JSON.stringify(LF||{})){P0.saveLife(o);LF=o}}catch(e){}
