@@ -25,6 +25,23 @@ function redis(cmd){const url=upEnv('upstashredisresturl'),tok=upEnv('upstashred
     rq.on('error',()=>res(null));rq.on('timeout',()=>{rq.destroy();res(null)});rq.end(body)})}
 const ME_CACHE=new Map(); // 토큰 → uid (잠깐 기억해서 Pi 서버에 매번 묻지 않게)
 async function uidOf(token){if(!token)return null;const c=ME_CACHE.get(token);if(c&&Date.now()-c.t<3600e3)return c.uid;const me=await piMe(String(token));if(!me)return null;ME_CACHE.set(token,{uid:me.uid,t:Date.now()});return me.uid}
+// ===== 프리미엄: 항목별 0.1π 또는 50토큰, 한 번 열면 계속 =====
+const PREM_ITEMS = ['body', 'food', 'ex', 'nut'], PREM_PI = 0.1, PREM_TOKENS = 50;
+async function getJSON(k, d) { try { const v = await redis(['GET', k]); return v ? JSON.parse(v) : d } catch (e) { return d } }
+async function unlocks(uid) { const a = await getJSON('oh:un:' + uid, []); return Array.isArray(a) ? a : [] }
+async function addUnlock(uid, item) { const a = await unlocks(uid); if (a.indexOf(item) < 0) a.push(item); await redis(['SET', 'oh:un:' + uid, JSON.stringify(a)]); return a }
+function piApi(method, p, data) { // Pi 서버 결제 API (앱 키는 Render 환경변수 PI_API_KEY)
+  const key = upEnv('piapikey'); if (!key) return Promise.resolve(null);
+  return new Promise(res => { const b = data ? JSON.stringify(data) : '';
+    const rq = https.request({ host: 'api.minepi.com', path: '/v2' + p, method, headers: { Authorization: 'Key ' + key, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(b) }, timeout: 15000 }, r => { let t = ''; r.on('data', d => t += d); r.on('end', () => { try { res(r.statusCode < 300 ? JSON.parse(t) : null) } catch (e) { res(null) } }) });
+    rq.on('error', () => res(null)); rq.on('timeout', () => { rq.destroy(); res(null) }); rq.end(b) });
+}
+async function finishPay(paymentId, txid) { // 결제 완료 처리 + 항목 열기
+  const p = await piApi('GET', '/payments/' + encodeURIComponent(paymentId)); if (!p) return null;
+  const item = p.metadata && p.metadata.item; if (PREM_ITEMS.indexOf(item) < 0 || Number(p.amount) < PREM_PI) return null;
+  if (!(p.status && p.status.developer_completed)) { const tx = txid || (p.transaction && p.transaction.txid); if (!tx) return null; const c = await piApi('POST', '/payments/' + encodeURIComponent(paymentId) + '/complete', { txid: tx }); if (!c) return null }
+  return addUnlock(p.user_uid, item);
+}
 function body(req) { return new Promise(res => { let b = ''; req.on('data', d => { b += d; if (b.length > 1e4) req.destroy() }); req.on('end', () => { try { res(JSON.parse(b || '{}')) } catch (e) { res({}) } }) }) }
 http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
@@ -43,6 +60,39 @@ http.createServer(async (req, res) => {
     if (q.data && typeof q.data === 'object') { const r = await redis(['SET', 'oh:me:' + uid, JSON.stringify(q.data).slice(0, 500000)]); res.writeHead(200); return res.end(JSON.stringify({ ok: r === 'OK' })); }
     const v = await redis(['GET', 'oh:me:' + uid]); let data = null; try { data = v ? JSON.parse(v) : null } catch (e) {}
     res.writeHead(200); return res.end(JSON.stringify({ ok: true, data }));
+  }
+  if (url === '/checkin' && req.method === 'POST') { // 출석 체크: 하루 10토큰, 7일째 +30 (7일 = 100토큰), 한국 날짜 기준
+    const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
+    if (!uid) { res.writeHead(401); return res.end('{"ok":false}'); }
+    const day = o => new Date(Date.now() + 9 * 3600e3 - o * 864e5).toISOString().slice(0, 10), today = day(0), yest = day(1);
+    let st = { bal: 0, streak: 0, last: '' }; try { const v = await redis(['GET', 'oh:pt:' + uid]); if (v) st = Object.assign(st, JSON.parse(v)) } catch (e) {}
+    if (st.last !== today && st.last !== yest) st.streak = 0; // 하루 빠지면 처음부터
+    if (q.peek || st.last === today) { res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, streak: st.streak, done: st.last === today, award: 0, un: await unlocks(uid) })); }
+    st.streak = st.streak >= 7 ? 1 : st.streak + 1; const award = 10 + (st.streak === 7 ? 30 : 0);
+    st.bal += award; st.last = today;
+    const r = await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)]);
+    if (r !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
+    res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, streak: st.streak, done: true, award, un: await unlocks(uid) }));
+  }
+  if (url === '/premium/token' && req.method === 'POST') { // 50토큰으로 열기
+    const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
+    if (!uid || PREM_ITEMS.indexOf(q.item) < 0) { res.writeHead(400); return res.end('{"ok":false}'); }
+    let un = await unlocks(uid); const st = await getJSON('oh:pt:' + uid, { bal: 0, streak: 0, last: '' });
+    if (un.indexOf(q.item) >= 0) { res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, un })); }
+    if ((st.bal || 0) < PREM_TOKENS) { res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'bal', bal: st.bal || 0, un })); }
+    st.bal -= PREM_TOKENS; if ((await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)])) !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
+    un = await addUnlock(uid, q.item); res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, un }));
+  }
+  if (url === '/pay/approve' && req.method === 'POST') { // Pi 결제 승인
+    const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
+    const p = q.paymentId ? await piApi('GET', '/payments/' + encodeURIComponent(q.paymentId)) : null;
+    const ok = uid && p && p.user_uid === uid && PREM_ITEMS.indexOf(p.metadata && p.metadata.item) >= 0 && Number(p.amount) >= PREM_PI && await piApi('POST', '/payments/' + encodeURIComponent(q.paymentId) + '/approve');
+    res.writeHead(ok ? 200 : 400); return res.end(JSON.stringify({ ok: !!ok }));
+  }
+  if ((url === '/pay/complete' || url === '/pay/incomplete') && req.method === 'POST') { // Pi 결제 완료 → 항목 열기
+    const q = await body(req); res.setHeader('Content-Type', 'application/json');
+    const un = q.paymentId ? await finishPay(String(q.paymentId), q.txid && String(q.txid)) : null;
+    res.writeHead(un ? 200 : 400); return res.end(JSON.stringify({ ok: !!un, un }));
   }
   if (url === '/auth' && req.method === 'POST') {
     const { token } = await body(req); const me = token ? await piMe(String(token)) : null;

@@ -540,5 +540,14 @@ var out=document.getElementById("out");MYD={bd:bd,R:R,cnt:cnt,weak:weak,strong:s
 [["sit","v1","시간"],["ph","v2","시간"],["st","v3","시간"],["ex","v4","회"],["dh","v5","시간"]].forEach(function(a){var e=document.getElementById(a[0]);e.oninput=function(){document.getElementById(a[1]).textContent=e.value+a[2]}});
 try{var sl=localStorage.getItem('lg');if(sl&&sl!='ko')setLang(sl)}catch(e){}
 </script>
+<script>/* 오행핏 앱에서 프리미엄 항목으로 열 때: 탭 숨기고 생년월일 채우고 해당 항목 보여주기 */
+(function(){var q=new URLSearchParams(location.search),p=q.get('p');if(!p)return;var g=function(i){return document.getElementById(i)};
+try{var hd=document.querySelector('.hd');if(hd)hd.style.display='none';var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';var pp=document.querySelector('.w > p.p');if(pp)pp.style.display='none';
+var L=q.get('lang');if(L&&L!='ko'){if(!LTT[L])L='en';setLang(L)}
+if(q.get('bd'))g('bd').value=q.get('bd');if(q.get('bt')){g('bt').value=q.get('bt')}else if(g('nt'))g('nt').checked=true;if(q.get('sx')=='m')g('sx').selectedIndex=1;
+step(2);var og=window.go;window.go=function(){og.apply(this,arguments);if(!ME)return;
+ if(p=='food'||p=='nut'){tab(2);if(p=='nut'){var hs=[].slice.call(document.querySelectorAll('#pan2 h2')),h=hs.filter(function(x){return x.innerHTML.indexOf('SPR')<0&&/영양|Supplement|サプリ|营养|dinh dưỡng|Compl|Nahrungs/i.test(x.textContent)})[0];if(h)setTimeout(function(){h.scrollIntoView({behavior:'smooth'})},200)}}
+ else if(p=='ex'){var r=document.querySelector('#out .row[onclick]');if(r)setTimeout(function(){r.click()},200)}}}catch(e){}})();
+</script>
 </body>
 </html>
