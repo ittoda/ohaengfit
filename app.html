@@ -269,7 +269,7 @@ document.addEventListener('visibilitychange',function(){if(!BGM)return;if(docume
 /* ===== 화면 ===== */
 var VIEW='intro';
 function go(v){VIEW=v;if(v!='tj')TJM=0;render();window.scrollTo(0,0)}
-function sndBtn(){return '<button class="snd" onclick="bgmToggle()" aria-label="music">'+(BGMON?'🔊 Music on':'🔇 Music off')+'</button>'}
+function sndBtn(){return '<button class="snd" onclick="bgmToggle()" aria-label="music">'+(BGMON?'🔊 '+t('음악 켬'):'🔇 '+t('음악 끔'))+'</button>'}
 function hdr(x){return '<div class="top"><button class="back" onclick="go(\'home\')">← '+t('처음')+'</button><b>'+x+'</b><span style="margin-left:auto">'+sndBtn()+'</span></div>'}
 function render(){var a=$('#app');document.documentElement.lang=LANG;document.documentElement.dir=LANG=='ar'?'rtl':'ltr';
   if(!C&&VIEW!='form'&&VIEW!='intro')VIEW='form';
