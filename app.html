@@ -233,7 +233,7 @@ async function login(){var b=$('#piBtn');bgmOn();
   go(C?'home':'form')}
 /* ===== 배경음악 (가야금·대금) ===== */
 var BGM=null,BGMON=ls('oh_bgm');if(BGMON===null)BGMON=true;
-function bgmOn(){if(!BGMON)return;try{if(!BGM){BGM=new Audio('bgm.mp3');BGM.loop=true;BGM.volume=.45}BGM.play().catch(function(){})}catch(e){}}
+function bgmOn(){if(!BGMON)return;try{if(!BGM){BGM=new Audio('bgm.mp3');BGM.loop=true;BGM.volume=.3}BGM.play().catch(function(){})}catch(e){}}
 function bgmToggle(){BGMON=!BGMON;ls('oh_bgm',BGMON);if(BGMON)bgmOn();else if(BGM)BGM.pause();render()}
 document.addEventListener('visibilitychange',function(){if(!BGM)return;if(document.hidden)BGM.pause();else if(BGMON)BGM.play().catch(function(){})});
 
