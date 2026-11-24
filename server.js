@@ -47,6 +47,11 @@ async function finishPay(paymentId, txid) { // 결제 완료 처리 + 항목 열
   if (!(p.status && p.status.developer_completed)) { const tx = txid || (p.transaction && p.transaction.txid); if (!tx) return null; const c = await piApi('POST', '/payments/' + encodeURIComponent(paymentId) + '/complete', { txid: tx }); if (!c) return null }
   return addUnlock(p.user_uid, item);
 }
+// ===== 테스트넷 전용: 앱 → 사용자 테스트 파이 보내기 (메인넷 지갑 신청 조건: 5명) =====
+// Render 테스트넷 서비스에서 TESTNET=1, PI_API_KEY(테스트넷 앱 키), PI_WALLET_SEED(테스트넷 지갑 S...) 를 넣으면 작동
+const IS_TESTNET = !!upEnv('testnet');
+let PIB = null; function piBackend() { if (PIB) return PIB; try { const m = require('pi-backend'); const P = m.default || m; PIB = new P(upEnv('piapikey'), upEnv('piwalletseed')); } catch (e) { console.log('pi-backend', e.message) } return PIB }
+const A2U_DONE = new Set();
 function body(req) { return new Promise(res => { let b = ''; req.on('data', d => { b += d; if (b.length > 1e4) req.destroy() }); req.on('end', () => { try { res(JSON.parse(b || '{}')) } catch (e) { res({}) } }) }) }
 http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
@@ -129,6 +134,27 @@ http.createServer(async (req, res) => {
     const { token } = await body(req); const me = token ? await piMe(String(token)) : null;
     res.writeHead(me ? 200 : 401, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(me ? { ok: true, uid: me.uid, username: me.username } : { ok: false }));
+  }
+  if (IS_TESTNET && (url === '/' || url === '/index.html')) { // 테스트넷 주소로 열면 테스트 파이 받기 화면
+    fs.readFile(path.join(__dirname, 'testpi.html'), (e, b) => { res.writeHead(e ? 404 : 200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }); res.end(e ? 'Not found' : b) }); return;
+  }
+  if (IS_TESTNET && url === '/a2u' && req.method === 'POST') {
+    const q = await body(req); res.setHeader('Content-Type', 'application/json');
+    const me = q.token ? await piMe(String(q.token)) : null;
+    if (!me) { res.writeHead(401); return res.end('{"ok":false,"why":"login"}'); }
+    const done = (await redis(['GET', 'oh:a2u:' + me.uid])) || A2U_DONE.has(me.uid);
+    if (done) { res.writeHead(200); return res.end(JSON.stringify({ ok: true, again: true, user: me.username })); }
+    const pi = piBackend(); if (!pi) { res.writeHead(500); return res.end('{"ok":false,"why":"setup"}'); }
+    try {
+      const pid = await pi.createPayment({ amount: 0.01, memo: 'Ohaengfit test reward', metadata: { kind: 'a2u-test' }, uid: me.uid });
+      const txid = await pi.submitPayment(pid); await pi.completePayment(pid, txid);
+      A2U_DONE.add(me.uid); redis(['SET', 'oh:a2u:' + me.uid, txid]).catch(() => {});
+      res.writeHead(200); return res.end(JSON.stringify({ ok: true, user: me.username, txid }));
+    } catch (e) {
+      console.log('a2u', e && (e.response && JSON.stringify(e.response.data) || e.message));
+      try { const inc = await pi.getIncompleteServerPayments(); for (const p of inc || []) { try { if (p.transaction && p.transaction.txid) await pi.completePayment(p.identifier, p.transaction.txid); else await pi.cancelPayment(p.identifier) } catch (x) {} } } catch (x) {}
+      res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'pay', msg: String(e && e.message || e).slice(0, 200) }));
+    }
   }
   const f = FILES[url];
   if (!f) { res.writeHead(404); return res.end('Not found'); }

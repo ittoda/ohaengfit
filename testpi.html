@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ohaeng Fit · Testnet</title><script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<style>body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;background:linear-gradient(135deg,#a98bf0,#5a3aa8);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#2a2238}
+.c{background:#fff;border-radius:22px;padding:28px 22px;max-width:360px;width:88%;text-align:center;box-shadow:0 20px 50px #0003}
+h1{font-size:22px;margin:6px 0}p{line-height:1.6;color:#555;font-size:15px}button{width:100%;padding:15px;border:0;border-radius:14px;background:#6d4bb8;color:#fff;font-size:17px;font-weight:800;margin-top:10px}
+button:disabled{opacity:.5}#m{margin-top:14px;font-weight:700;min-height:24px}.s{font-size:12px;color:#888}</style></head><body>
+<div class="c"><div style="font-size:44px">🎁</div><h1>오행핏 테스트 파이 받기</h1>
+<p>버튼을 누르면 <b>앱이 회원님께 테스트 파이 0.01</b>을 보내 드려요.<br>회원님은 <b>아무것도 보내지 않아요.</b></p>
+<p class="s">Testnet Pi only · 실제 파이가 아니에요 · 비밀번호나 24단어는 절대 묻지 않아요<br>Ohaeng Fit sends you 0.01 Test-Pi. You send nothing.</p>
+<button id="b" onclick="go()">π 로그인하고 받기 / Get Test-Pi</button><div id="m"></div></div>
+<script>
+var m=document.getElementById('m'),b=document.getElementById('b');
+async function go(){b.disabled=true;m.textContent='로그인 중… / Signing in…';
+ try{await Pi.init({version:"2.0"});var a=await Pi.authenticate(['username'],function(){});
+  m.textContent='보내는 중… / Sending…';
+  var r=await (await fetch('/a2u',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:a.accessToken})})).json();
+  if(r.ok){m.style.color='#2f9e44';m.textContent=r.again?'✅ 이미 받으셨어요. 고마워요! / Already received':'✅ 받으셨어요! 도와주셔서 고마워요 🙏 / Received!'}
+  else{m.style.color='#c92a2a';m.textContent='잠시 후 다시 눌러 주세요 / Please try again ('+(r.why||'')+')';b.disabled=false}
+ }catch(e){m.style.color='#c92a2a';m.textContent='Pi 브라우저에서 열어 주세요 / Open in Pi Browser';b.disabled=false}}
+</script></body></html>
