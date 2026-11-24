@@ -200,7 +200,7 @@ function GZ(s,b){return LANG=='ko'?ST[s]+BR[b]+'('+SH[s]+BH[b]+')':SH[s]+BH[b]}
 var LOGO='<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lgI" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a98bf0"/><stop offset="1" stop-color="#5a3aa8"/></linearGradient></defs><rect width="240" height="240" rx="54" fill="url(#lgI)"/><g fill="#fff"><circle cx="120" cy="78" r="13"/><path d="M120 94C108 94 104 104 104 116L104 142 110 142 112 182 121 182 120 152 121 182 130 182 130 142 136 142 136 116C136 104 132 94 120 94Z"/></g><circle cx="120" cy="38" r="10" fill="#6fcf97"/><circle cx="190" cy="90" r="10" fill="#ff7a59"/><circle cx="164" cy="176" r="10" fill="#ffd25a"/><circle cx="76" cy="176" r="10" fill="#d7dde5"/><circle cx="50" cy="90" r="10" fill="#5aa7ff"/></svg>';
 function introView(){return '<div class="intro"><div class="ltop">'+langSel()+'</div><div class="logo">'+LOGO+'</div><h1>'+t('오행핏')+'</h1><div class="en">Wellbeing Life</div><p class="tag">'+t('토정비결 · 사주팔자 · 오늘의 운세')+'<br>'+t('오늘의 노래와 글귀 · 나의 몸 분석')+'<br>'+t('나에게 맞는 음식과 운동')+'</p>'+
  '<div class="bot"><button class="btn pibtn" id="piBtn" onclick="login()">π '+t('Pi로 로그인')+'</button><div class="foot"><a href="privacy.html">'+t('개인정보처리방침')+'</a><span>·</span><a href="terms.html">'+t('이용약관')+'</a><span>·</span><a href="#" onclick="about();return false">'+t('앱 소개')+'</a></div><div class="ver">'+t('버전')+' 2.0.0 · © 2026 '+t('오행핏')+'</div></div></div>'}
-function about(){openSheet('<h2>☯️ '+t('오행핏')+' · Wellbeing Life</h2><p class="p">'+t('생년월일시로 나의 오행(목·화·토·금·수) 기운을 읽고, 한 해와 오늘의 흐름을 알려 주는 앱이에요.')+'</p><p class="p"><b>'+t('무료')+'</b> '+t('토정비결')+' · '+t('사주팔자')+' · '+t('오늘의 운세')+' · '+t('오늘의 노래와 글귀')+'<br><b>👑 '+t('프리미엄')+'</b> '+t('나의 몸 분석')+' · '+t('나에게 맞는 음식')+' · '+t('운동 따라하기')+' · '+t('영양 가이드')+'</p><p class="note">'+t('생년월일은 내 폰에만 저장돼요. 운세는 재미와 참고용이고, 건강 정보는 의료 상담을 대신하지 않아요.')+'</p><p class="note">'+t('버전')+' 2.0.0</p><button class="btn ghost" onclick="closeSheet()">'+t('닫기')+'</button>')}
+function about(){openSheet('<h2 style="display:flex;align-items:center;gap:8px"><span style="width:30px;height:30px;display:inline-block">'+LOGO+'</span>'+t('오행핏')+' · Wellbeing Life</h2><p class="p">'+t('생년월일시로 나의 오행(목·화·토·금·수) 기운을 읽고, 한 해와 오늘의 흐름을 알려 주는 앱이에요.')+'</p><p class="p"><b>'+t('무료')+'</b> '+t('토정비결')+' · '+t('사주팔자')+' · '+t('오늘의 운세')+' · '+t('오늘의 노래와 글귀')+'<br><b>👑 '+t('프리미엄')+'</b> '+t('나의 몸 분석')+' · '+t('나에게 맞는 음식')+' · '+t('운동 따라하기')+' · '+t('영양 가이드')+'</p><p class="note">'+t('생년월일은 내 폰에만 저장돼요. 운세는 재미와 참고용이고, 건강 정보는 의료 상담을 대신하지 않아요.')+'</p><p class="note">'+t('버전')+' 2.0.0</p><button class="btn ghost" onclick="closeSheet()">'+t('닫기')+'</button>')}
 async function login(){var b=$('#piBtn');bgmOn();
   try{b.disabled=true;b.textContent=t('Pi 로그인 중…');var f=window.parent&&window.parent!==window&&window.parent.piLogin;if(f){var s=await f();if(s&&s.username)PINAME=s.username}}catch(e){}
   go(C?'home':'form')}
@@ -227,7 +227,7 @@ function homeView(){
   '<div class="info">'+infoLine()+'</div><button class="edit" onclick="go(\'form\')">✏️ '+t('내 정보 고치기')+'</button></div></div>';
   h+='<div class="menu">'+
    mi('tj','📜',t('토정비결'),t('{0}년 한 해 신수와 달마다 운세',TY()))+
-   mi('saju','☯️',t('사주팔자'),t('여덟 글자로 보는 나의 타고난 기운'))+
+   mi('saju','🔮',t('사주팔자'),t('여덟 글자로 보는 나의 타고난 기운'))+
    mi('today','🌤️',t('오늘의 운세'),t('{0}월 {1}일 재물·일·관계·건강',td[1],td[2]))+
    mi('song','🎵',t('오늘의 노래와 글귀'),t('오늘 기분과 오행에 맞는 노래 5곡'))+'</div>';
   h+='<div class="c prem"><div class="sect"><b>👑 '+t('프리미엄')+'</b><span class="lock">'+t('π로 열기')+'</span></div>'+
@@ -253,7 +253,7 @@ function formView(){FM=FM||Object.assign({y:1990,m:1,d:1,cal:'s',lp:false,si:-1,
   for(var m=1;m<=12;m++)mo+='<option'+(m==FM.m?' selected':'')+'>'+m+'</option>';
   for(var d=1;d<=31;d++)do_+='<option'+(d==FM.d?' selected':'')+'>'+d+'</option>';
   SIJIN.forEach(function(s,i){so+='<option value="'+i+'"'+(i==FM.si?' selected':'')+'>'+(LANG=='ko'?s:t(s.split(' ')[0])+' '+s.split(' ')[1])+'</option>'});
-  return (C?hdr(t('내 정보')):'<div style="text-align:center;margin:10px 0 16px"><div style="font-size:40px">☯️</div><b style="font-size:20px">'+(PINAME?t('{0}님, 반가워요!',esc(PINAME)):t('오행핏에 오신 걸 환영해요!'))+'</b><p class="sub" style="margin:4px 0 0">'+t('생년월일을 한 번만 넣으면 모든 운세에 쓰여요.')+'</p></div>')+
+  return (C?hdr(t('내 정보')):'<div style="text-align:center;margin:10px 0 16px"><div style="width:96px;height:96px;margin:0 auto 6px;filter:drop-shadow(0 8px 18px #5a3aa855)">'+LOGO+'</div><b style="font-size:20px">'+(PINAME?t('{0}님, 반가워요!',esc(PINAME)):t('오행핏에 오신 걸 환영해요!'))+'</b><p class="sub" style="margin:4px 0 0">'+t('생년월일을 한 번만 넣으면 모든 운세에 쓰여요.')+'</p></div>')+
   '<div class="c"><label>'+t('달력')+'</label><div class="seg" id="cal"><button class="'+(FM.cal=='s'?'on':'')+'" onclick="FM.cal=\'s\';render()">'+t('양력')+'</button><button class="'+(FM.cal=='l'?'on':'')+'" onclick="FM.cal=\'l\';render()">'+t('음력')+'</button></div>'+
   '<label>'+t('생년월일')+'</label><div class="r3"><select id="fy" aria-label="year">'+yo+'</select><select id="fm" aria-label="month">'+mo+'</select><select id="fd" aria-label="day">'+do_+'</select></div>'+
   (FM.cal=='l'?'<label class="chk"><input type="checkbox" id="flp"'+(FM.lp?' checked':'')+'> '+t('윤달이에요')+'</label>':'')+
