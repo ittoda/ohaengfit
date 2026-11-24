@@ -618,6 +618,17 @@ function woTick(ts){if(!WO)return;WO.raf=requestAnimationFrame(woTick);if(WO.pau
 runToggle=function(){woStart()};
 
 </script>
+<script>
+/* 따라하기 버튼을 눈에 잘 띄게 + 근육 해부도 버튼 제거 */
+var WOB={ko:'따라하기 시작',en:'Start workout',ja:'一緒にやる',zh:'开始跟练',vi:'Bắt đầu tập',fr:'Commencer',de:'Mitmachen',es:'Empezar',pt:'Começar',it:'Inizia',id:'Mulai latihan',tr:'Başla',ru:'Начать',el:'Ξεκίνα',hi:'शुरू करें',th:'เริ่มออกกำลัง',ar:'ابدأ التمرين'};
+function woBtnTxt(){return '▶ '+(WOB[WOL]||WOB[LANG]||WOB.en)}
+(function(){var _el=exList;exList=function(){_el();var m=document.getElementById('mod');if(!m)return;
+  [].slice.call(m.querySelectorAll('button')).forEach(function(b){if((b.getAttribute('onclick')||'').indexOf('openAtlas')>=0){var n=b.nextElementSibling;b.remove()}});
+  [].slice.call(m.querySelectorAll(".c[onclick^='pickEx']")).forEach(function(c,i){var d=c.querySelector('div');if(!d)return;var x=document.createElement('button');x.textContent=woBtnTxt();x.style.cssText='width:auto;margin:8px 0 0;padding:8px 14px;font-size:14px';x.onclick=function(ev){ev.stopPropagation();pickEx(i);setTimeout(function(){runToggle()},60)};d.appendChild(x)})};
+ var _ef=exFocus;exFocus=function(){_ef();var m=document.getElementById('mod');if(!m)return;var f=document.getElementById('fig'),card=f&&f.closest('.c');var ob=document.getElementById('btn');if(ob)ob.style.display='none';
+  if(card&&!document.getElementById('woGo')){var x=document.createElement('button');x.id='woGo';x.textContent=woBtnTxt();x.style.cssText='font-size:18px;padding:14px;margin:10px 0 0';x.onclick=function(){runToggle()};card.appendChild(x)}}})();
+
+</script>
 <script>/* 오행핏 앱에서 프리미엄 항목으로 열 때: 탭 숨기고 생년월일 채우고 해당 항목 보여주기 */
 (function(){var q=new URLSearchParams(location.search),p=q.get('p');if(!p)return;var g=function(i){return document.getElementById(i)};
 try{var hd=document.querySelector('.hd');if(hd)hd.style.display='none';var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';var pp=document.querySelector('.w > p.p');if(pp)pp.style.display='none';
