@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>오행핏 · Wellbeing Life</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%20240%20240%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22lg1%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23a98bf0%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%235a3aa8%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22240%22%20height%3D%22240%22%20rx%3D%2254%22%20fill%3D%22url%28%23lg1%29%22/%3E%3Cg%20fill%3D%22%23fff%22%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2278%22%20r%3D%2213%22/%3E%3Cpath%20d%3D%22M120%2094C108%2094%20104%20104%20104%20116L104%20142%20110%20142%20112%20182%20121%20182%20120%20152%20121%20182%20130%20182%20130%20142%20136%20142%20136%20116C136%20104%20132%2094%20120%2094Z%22/%3E%3C/g%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2238%22%20r%3D%2210%22%20fill%3D%22%236fcf97%22/%3E%3Ccircle%20cx%3D%22190%22%20cy%3D%2290%22%20r%3D%2210%22%20fill%3D%22%23ff7a59%22/%3E%3Ccircle%20cx%3D%22164%22%20cy%3D%22176%22%20r%3D%2210%22%20fill%3D%22%23ffd25a%22/%3E%3Ccircle%20cx%3D%2276%22%20cy%3D%22176%22%20r%3D%2210%22%20fill%3D%22%23d7dde5%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2290%22%20r%3D%2210%22%20fill%3D%22%235aa7ff%22/%3E%3C/svg%3E">
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script>
+window.PI_SESSION=null;
+var PI_READY=(async function(){try{if(window.Pi)await Pi.init({version:"2.0"})}catch(e){}})();
+window.piLogin=async function(){
+  if(window.PI_SESSION)return window.PI_SESSION;
+  try{await PI_READY;if(!window.Pi)return null;
+    var a=await Pi.authenticate(["username"],function(){});if(!a||!a.accessToken)return null;
+    var un=a.user&&a.user.username,uid=a.user&&a.user.uid;
+    try{var r=await fetch("/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:a.accessToken})});if(r.ok){var d=await r.json();if(d&&d.ok){un=d.username;uid=d.uid}}}catch(e){}
+    window.PI_SESSION={token:a.accessToken,uid:uid,username:un};return window.PI_SESSION}catch(e){return null}};
+</script>
+
 <style>
 :root{--bg:#f4f0fb;--card:#fff;--tx:#2a2238;--sub:#6f6485;--ln:#e2d9f3;--ac:#6d4bb8;--ac2:#a98bf0;--gold:#c99a2e;
 --e0:#4f9a6b;--e1:#d9603a;--e2:#c9a23a;--e3:#8a94a0;--e4:#3a78b5}
@@ -144,7 +157,11 @@ var LUN="-ds3:LlLllLllLlLL,-di9:LlLLl+lLllLlLL,-d7l:lLLlLlLlLllL,-cxr:LlLlLLlLlL
 /* ===== 기본 ===== */
 var $=function(s){return document.querySelector(s)};
 function esc(t){return String(t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+// 폰에 저장: localStorage + (사진 말고는) 쿠키에도 한 벌 더. 어느 한쪽이 지워져도 남게
+function ck(k,s){try{if(s===undefined){var m=document.cookie.match(new RegExp('(?:^|; )'+k+'=([^;]*)'));return m?decodeURIComponent(m[1]):null}document.cookie=k+'='+encodeURIComponent(s)+';max-age=315360000;path=/;SameSite=Lax'+(location.protocol=='https:'?';Secure':'')}catch(e){return null}}
+function ls(k,v){var raw=null;
+  if(v===undefined){try{raw=localStorage.getItem(k)}catch(e){}if(raw==null&&k!='oh_photo')raw=ck(k);try{return JSON.parse(raw||'null')}catch(e){return null}}
+  var s=JSON.stringify(v);try{localStorage.setItem(k,s)}catch(e){}if(k!='oh_photo')ck(k,s)}
 var ST="갑을병정무기경신임계",SH="甲乙丙丁戊己庚辛壬癸",BR="자축인묘진사오미신유술해",BH="子丑寅卯辰巳午未申酉戌亥";
 var ANI=["쥐","소","호랑이","토끼","용","뱀","말","양","원숭이","닭","개","돼지"],ANE=["🐭","🐮","🐯","🐰","🐲","🐍","🐴","🐑","🐵","🐔","🐶","🐷"];
 var SIJIN=["자시 (23:30~01:29)","축시 (01:30~03:29)","인시 (03:30~05:29)","묘시 (05:30~07:29)","진시 (07:30~09:29)","사시 (09:30~11:29)","오시 (11:30~13:29)","미시 (13:30~15:29)","신시 (15:30~17:29)","유시 (17:30~19:29)","술시 (19:30~21:29)","해시 (21:30~23:29)"];
@@ -192,7 +209,7 @@ var C=calc();
 
 /* ===== Pi 로그인 (바깥 index.html이 로그인해 둔 이름) ===== */
 var PINAME='';
-function piName(){try{var s=window.parent&&window.parent.PI_SESSION;if(s&&s.username)return s.username}catch(e){}return ''}
+function piName(){try{var s=window.PI_SESSION||(window.parent&&window.parent.PI_SESSION);if(s&&s.username)return s.username}catch(e){}return ''}
 (function poll(n){var u=piName();if(u&&u!==PINAME){PINAME=u;if(VIEW=='home')render()}if(!u&&n<40)setTimeout(function(){poll(n+1)},500)})(0);
 
 
@@ -212,7 +229,7 @@ function introView(){return '<div class="intro"><div class="ltop">'+langSel()+'<
  '<div class="bot"><button class="btn pibtn" id="piBtn" onclick="login()">π '+t('Pi로 로그인')+'</button><div class="foot"><a href="privacy.html">'+t('개인정보처리방침')+'</a><span>·</span><a href="terms.html">'+t('이용약관')+'</a><span>·</span><a href="#" onclick="about();return false">'+t('앱 소개')+'</a></div><div class="ver">'+t('버전')+' 2.0.0 · © 2026 '+t('오행핏')+'</div></div></div>'}
 function about(){openSheet('<h2 style="display:flex;align-items:center;gap:8px"><span style="width:30px;height:30px;display:inline-block">'+LOGO+'</span>'+t('오행핏')+' · Wellbeing Life</h2><p class="p">'+t('생년월일시로 나의 오행(목·화·토·금·수) 기운을 읽고, 한 해와 오늘의 흐름을 알려 주는 앱이에요.')+'</p><p class="p"><b>'+t('무료')+'</b> '+t('토정비결')+' · '+t('사주팔자')+' · '+t('오늘의 운세')+' · '+t('오늘의 노래와 글귀')+'<br><b>👑 '+t('프리미엄')+'</b> '+t('나의 몸 분석')+' · '+t('나에게 맞는 음식')+' · '+t('운동 따라하기')+' · '+t('영양 가이드')+'</p><p class="note">'+t('생년월일은 내 폰에만 저장돼요. 운세는 재미와 참고용이고, 건강 정보는 의료 상담을 대신하지 않아요.')+'</p><p class="note">'+t('버전')+' 2.0.0</p><button class="btn ghost" onclick="closeSheet()">'+t('닫기')+'</button>')}
 async function login(){var b=$('#piBtn');bgmOn();
-  try{b.disabled=true;b.textContent=t('Pi 로그인 중…');var f=window.parent&&window.parent!==window&&window.parent.piLogin;if(f){var s=await f();if(s&&s.username)PINAME=s.username}}catch(e){}
+  try{b.disabled=true;b.textContent=t('Pi 로그인 중…');var f=window.piLogin||(window.parent&&window.parent!==window&&window.parent.piLogin);if(f){var s=await f();if(s&&s.username)PINAME=s.username}}catch(e){}
   go(C?'home':'form')}
 /* ===== 배경음악 (가야금·대금) ===== */
 var BGM=null,BGMON=ls('oh_bgm');if(BGMON===null)BGMON=true;
