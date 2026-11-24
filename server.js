@@ -26,10 +26,10 @@ function redis(cmd){const url=upEnv('upstashredisresturl'),tok=upEnv('upstashred
     rq.on('error',()=>res(null));rq.on('timeout',()=>{rq.destroy();res(null)});rq.end(body)})}
 const ME_CACHE=new Map(); // 토큰 → uid (잠깐 기억해서 Pi 서버에 매번 묻지 않게)
 async function uidOf(token){if(!token)return null;const c=ME_CACHE.get(token);if(c&&Date.now()-c.t<3600e3)return c.uid;const me=await piMe(String(token));if(!me)return null;ME_CACHE.set(token,{uid:me.uid,t:Date.now()});if(me.username)redis(['HSET','oh:names',me.uid,me.username]).catch(()=>{});return me.uid}
-// ===== 프리미엄: 항목별 0.1π 또는 50토큰, 오늘 하루 열림 (한국 자정에 다시 잠김) =====
+// ===== 프리미엄: 항목별 0.1π 또는 100토큰, 오늘 하루 열림 (한국 자정에 다시 잠김) =====
 const AD_PT = 10, AD_MAX = 20; // 광고 1회 10토큰, 하루 20회
 function rankSet(uid, bal) { return redis(['ZADD', 'oh:rank', String(bal || 0), uid]).catch(() => null) } // 토큰 순위
-const PREM_ITEMS = ['body', 'food', 'ex', 'nut', 'palm'], PREM_PI = 0.1, PREM_TOKENS = 50;
+const PREM_ITEMS = ['body', 'food', 'ex', 'nut', 'palm'], PREM_PI = 0.1, PREM_TOKENS = 100;
 async function getJSON(k, d) { try { const v = await redis(['GET', k]); return v ? JSON.parse(v) : d } catch (e) { return d } }
 const kstDay = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // 한국 날짜
 async function unlockMap(uid) { const m = await getJSON('oh:un:' + uid, {}); return m && !Array.isArray(m) && typeof m === 'object' ? m : {} }
@@ -105,7 +105,7 @@ http.createServer(async (req, res) => {
     if ((await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)])) !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
     rankSet(uid, st.bal); res.writeHead(200); return res.end(JSON.stringify({ ok: true, award: AD_PT, bal: st.bal, adN: st.adN, adMax: AD_MAX }));
   }
-  if (url === '/premium/token' && req.method === 'POST') { // 50토큰으로 열기
+  if (url === '/premium/token' && req.method === 'POST') { // 100토큰으로 열기
     const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
     if (!uid || PREM_ITEMS.indexOf(q.item) < 0) { res.writeHead(400); return res.end('{"ok":false}'); }
     let un = await unlocks(uid); const st = await getJSON('oh:pt:' + uid, { bal: 0, streak: 0, last: '' });
