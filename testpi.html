@@ -7,14 +7,15 @@ button:disabled{opacity:.5}#m{margin-top:14px;font-weight:700;min-height:24px}.s
 <div class="c"><div style="font-size:44px">🎁</div><h1>오행핏 테스트 파이 받기</h1>
 <p>버튼을 누르면 <b>앱이 회원님께 테스트 파이 0.01</b>을 보내 드려요.<br>회원님은 <b>아무것도 보내지 않아요.</b></p>
 <p class="s">Testnet Pi only · 실제 파이가 아니에요 · 비밀번호나 24단어는 절대 묻지 않아요<br>Ohaeng Fit sends you 0.01 Test-Pi. You send nothing.</p>
-<button id="b" onclick="go()">π 로그인하고 받기 / Get Test-Pi</button><div id="m"></div></div>
+<button id="b" onclick="go()">π 로그인하고 받기 / Get Test-Pi</button><div id="m"></div><div id="cnt" class="s" style="margin-top:12px;font-size:14px;color:#6d4bb8;font-weight:700"></div></div>
 <script>
 var m=document.getElementById('m'),b=document.getElementById('b');
+function cnt(){fetch('/a2u/count').then(function(r){return r.json()}).then(function(j){document.getElementById('cnt').textContent='지금까지 '+j.n+'명 받았어요 / '+j.n+' received'}).catch(function(){})}cnt();
 async function go(){b.disabled=true;m.textContent='로그인 중… / Signing in…';var _t=setTimeout(function(){m.style.color='#c92a2a';m.textContent='파이 브라우저(Pi Browser)에서 열어 주세요\nPlease open this link in Pi Browser\nohaengfit-testnet.onrender.com';m.style.whiteSpace='pre-wrap';b.disabled=false},10000);
  try{await Pi.init({version:"2.0"});var a=await Pi.authenticate(['username','payments','wallet_address'],function(){});clearTimeout(_t);
   m.textContent='보내는 중… / Sending…';
   var r=await (await fetch('/a2u',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:a.accessToken})})).json();
-  if(r.ok){m.style.color='#2f9e44';m.textContent=r.again?'✅ 이미 받으셨어요. 고마워요! / Already received':'✅ 받으셨어요! 도와주셔서 고마워요 🙏 / Received!'}
+  if(r.ok){m.style.color='#2f9e44';m.textContent=r.again?'✅ 이미 받으셨어요. 고마워요! / Already received':'✅ 받으셨어요! 도와주셔서 고마워요 🙏 / Received!';cnt()}
   else{m.style.color='#c92a2a';m.textContent='잠시 후 다시 눌러 주세요 / Please try again ('+(r.why||'')+')'+(r.msg?'\n'+r.msg:'');m.style.whiteSpace='pre-wrap';m.style.fontSize='13px';b.disabled=false}
  }catch(e){m.style.color='#c92a2a';m.textContent='Pi 브라우저에서 열어 주세요 / Open in Pi Browser';b.disabled=false}}
 </script></body></html>

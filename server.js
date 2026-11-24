@@ -138,6 +138,10 @@ http.createServer(async (req, res) => {
   if (IS_TESTNET && (url === '/' || url === '/index.html')) { // 테스트넷 주소로 열면 테스트 파이 받기 화면
     fs.readFile(path.join(__dirname, 'testpi.html'), (e, b) => { res.writeHead(e ? 404 : 200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }); res.end(e ? 'Not found' : b) }); return;
   }
+  if (IS_TESTNET && url === '/a2u/count') {
+    let n = A2U_DONE.size; try { const k = await redis(['KEYS', 'oh:a2u:*']); if (Array.isArray(k)) n = Math.max(n, k.length); } catch (e) {}
+    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ n }));
+  }
   if (IS_TESTNET && url === '/a2u' && req.method === 'POST') {
     const q = await body(req); res.setHeader('Content-Type', 'application/json');
     const me = q.token ? await piMe(String(q.token)) : null;
