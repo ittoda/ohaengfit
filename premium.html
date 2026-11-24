@@ -570,10 +570,58 @@ fig=function(p,e,k,fc){return figFlat(p,e,k,fc)};
  var dn=0;[].slice.call(document.querySelectorAll('#mod div,#mod .d')).forEach(function(d){if(/진한 빨강|빨갛게 표시돼요/.test(d.textContent)&&!d.querySelector('div')){if(dn++)d.remove();else d.textContent='빨강 = 힘을 쓰는 근육 · 파랑 = 늘어나는 근육'}})};togZoom=function(){cur.zoom=0}})();
 
 </script>
+<script>
+/* 따라하기 모드: 크게 보기 + 3·2·1 카운트다운 + 횟수 세기 + 세트 사이 휴식 + 음성/삐 소리 */
+var WO=null,WOS={ko:['준비하세요','시작!','휴식','{0}초 쉬어요','{0}세트','완료! 수고하셨어요','남은 횟수','일시정지','계속','그만하기','다시 하기','다음 세트 준비'],
+en:['Get ready',"Let's go!",'Rest','Rest for {0} seconds','Set {0}','Done! Great job','Reps left','Pause','Resume','Stop','Again','Next set, get ready'],
+ja:['準備して','スタート！','休憩','{0}秒休憩','{0}セット目','完了！お疲れさまでした','残り回数','一時停止','再開','やめる','もう一度','次のセット、準備して'],
+zh:['准备','开始！','休息','休息{0}秒','第{0}组','完成！辛苦了','剩余次数','暂停','继续','结束','再来一次','下一组，准备'],
+vi:['Chuẩn bị','Bắt đầu!','Nghỉ','Nghỉ {0} giây','Hiệp {0}','Hoàn thành! Làm tốt lắm','Còn lại','Tạm dừng','Tiếp tục','Dừng','Làm lại','Chuẩn bị hiệp tiếp'],
+fr:['Préparez-vous',"C'est parti !",'Repos','Repos {0} secondes','Série {0}','Terminé ! Bravo','Restant','Pause','Reprendre','Arrêter','Recommencer','Série suivante, prêt'],
+de:['Mach dich bereit',"Los geht's!",'Pause','{0} Sekunden Pause','Satz {0}','Geschafft! Super gemacht','Übrig','Pause','Weiter','Beenden','Nochmal','Nächster Satz, bereit'],
+es:['Prepárate','¡Vamos!','Descanso','Descansa {0} segundos','Serie {0}','¡Listo! Buen trabajo','Repeticiones restantes','Pausa','Seguir','Parar','Otra vez','Siguiente serie, prepárate'],
+pt:['Prepare-se','Vamos lá!','Descanso','Descanse {0} segundos','Série {0}','Pronto! Bom trabalho','Repetições restantes','Pausar','Continuar','Parar','De novo','Próxima série, prepare-se'],
+it:['Preparati','Via!','Riposo','Riposa {0} secondi','Serie {0}','Fatto! Ottimo lavoro','Ripetizioni rimaste','Pausa','Riprendi','Ferma','Ancora','Prossima serie, preparati'],
+id:['Bersiap','Ayo mulai!','Istirahat','Istirahat {0} detik','Set {0}','Selesai! Kerja bagus','Sisa hitungan','Jeda','Lanjut','Berhenti','Ulangi','Set berikutnya, bersiap'],
+tr:['Hazırlan','Hadi başla!','Dinlen','{0} saniye dinlen','{0}. set','Bitti! Harika iş','Kalan tekrar','Duraklat','Devam','Bitir','Tekrar','Sonraki set, hazırlan'],
+ru:['Приготовьтесь','Поехали!','Отдых','Отдых {0} секунд','Подход {0}','Готово! Отличная работа','Осталось повторов','Пауза','Продолжить','Стоп','Ещё раз','Следующий подход, приготовьтесь'],
+el:['Ετοιμάσου','Πάμε!','Ξεκούραση','Ξεκούραση {0} δευτερόλεπτα','Σετ {0}','Τέλος! Μπράβο','Επαναλήψεις που μένουν','Παύση','Συνέχεια','Διακοπή','Ξανά','Επόμενο σετ, ετοιμάσου'],
+hi:['तैयार हो जाइए','चलो शुरू करें!','आराम','{0} सेकंड आराम','सेट {0}','पूरा हुआ! बहुत बढ़िया','बाकी गिनती','रोकें','जारी रखें','बंद करें','फिर से','अगला सेट, तैयार हो जाइए'],
+th:['เตรียมตัว','เริ่มเลย!','พัก','พัก {0} วินาที','เซ็ตที่ {0}','เสร็จแล้ว! เก่งมาก','จำนวนที่เหลือ','หยุดชั่วคราว','ทำต่อ','หยุด','อีกครั้ง','เซ็ตต่อไป เตรียมตัว'],
+ar:['استعد','هيا نبدأ!','راحة','استرح {0} ثانية','المجموعة {0}','انتهيت! عمل رائع','العدات المتبقية','إيقاف مؤقت','متابعة','إنهاء','مرة أخرى','المجموعة التالية، استعد']},
+WOV={ko:'ko-KR',en:'en-US',ja:'ja-JP',zh:'zh-CN',vi:'vi-VN',fr:'fr-FR',de:'de-DE',es:'es-ES',pt:'pt-BR',it:'it-IT',id:'id-ID',tr:'tr-TR',ru:'ru-RU',el:'el-GR',hi:'hi-IN',th:'th-TH',ar:'ar-SA'},WOL=(new URLSearchParams(location.search).get('lang'))||'ko',WOREST=20,WOSETS=3,WOSND=true,WOAC=null,WOWL=null;
+function woT(i,a){var L=WOS[WOL]||WOS[LANG]||WOS.en;return String(L[i]).replace('{0}',a)}
+function woSay(x){if(!WOSND)return;try{var u=new SpeechSynthesisUtterance(String(x));u.lang=WOV[WOL]||WOV[LANG]||'en-US';u.rate=1.05;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function woBeep(hi){if(!WOSND)return;try{WOAC=WOAC||new(window.AudioContext||window.webkitAudioContext)();var o=WOAC.createOscillator(),g=WOAC.createGain();o.frequency.value=hi?1175:784;o.connect(g);g.connect(WOAC.destination);var t=WOAC.currentTime;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+(hi?.45:.18));o.start(t);o.stop(t+.5)}catch(e){}}
+function woStart(){var e=EX[RX[cur.r][cur.i]];cancelAnimationFrame(cur.raf);try{WOAC=WOAC||new(window.AudioContext||window.webkitAudioContext)();WOAC.resume&&WOAC.resume()}catch(x){}
+ try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(function(l){WOWL=l}).catch(function(){})}catch(x){}
+ WO={e:e,set:1,ph:'cd',t0:0,last:null,paused:0,off:0};var d=document.getElementById('wo');if(!d){d=document.createElement('div');d.id='wo';d.setAttribute('data-nt','');document.body.appendChild(d)}
+ d.style.cssText='position:fixed;inset:0;z-index:80;background:#f8f8f6;color:#222;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px calc(env(safe-area-inset-bottom,0px) + 14px)';
+ d.innerHTML=`<div style='display:flex;justify-content:space-between;align-items:center'><b id='woN' style='font-size:18px'>${e.n}</b><span><button id='woS' onclick='WOSND=!WOSND;this.textContent=WOSND?"🔊":"🔇"' style='width:auto;margin:0 6px 0 0;padding:8px 12px;background:#fff;color:#222;border:1px solid #ddd'>${WOSND?'🔊':'🔇'}</button><button onclick='woStop()' style='width:auto;margin:0;padding:8px 14px;background:#fff;color:#222;border:1px solid #ddd'>✕</button></span></div>
+ <div id='woSet' style='text-align:center;color:#777;font-size:14px;margin-top:4px'></div>
+ <div style='flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0'><svg id='wof' viewBox='0 -16 340 216' style='width:100%;max-height:100%'></svg><div id='woBig' style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:120px;font-weight:900;color:#6d4bb8;text-shadow:0 4px 18px #fff;pointer-events:none'></div></div>
+ <div style='text-align:center'><div id='woLbl' style='color:#777;font-size:14px'></div><div id='woCnt' style='font-size:64px;font-weight:900;line-height:1.1'></div><div style='height:8px;background:#e6e1f2;border-radius:6px;overflow:hidden;margin:10px 0'><i id='woBar' style='display:block;height:100%;width:0;background:#6d4bb8;transition:width .2s'></i></div>
+ <div style='display:flex;gap:8px'><button id='woP' onclick='woPause()' style='flex:1;margin:0'>${woT(7)}</button><button onclick='woStop()' style='flex:1;margin:0;background:#fff;color:#222;border:1px solid #ddd'>${woT(9)}</button></div></div>`;
+ woSay(woT(0));WO.raf=requestAnimationFrame(woTick)}
+function woPause(){if(!WO)return;var b=document.getElementById('woP');if(WO.paused){WO.off+=performance.now()-WO.paused;WO.paused=0;b.textContent=woT(7)}else{WO.paused=performance.now();b.textContent=woT(8);try{speechSynthesis.cancel()}catch(e){}}}
+function woStop(){if(WO)cancelAnimationFrame(WO.raf);WO=null;try{speechSynthesis.cancel()}catch(e){}try{WOWL&&WOWL.release()}catch(e){}var d=document.getElementById('wo');if(d)d.remove();if(typeof pickEx=='function')pickEx(cur.i)}
+function woPh(ph){WO.ph=ph;WO.t0=0;WO.off=0;WO.last=null}
+function woTick(ts){if(!WO)return;WO.raf=requestAnimationFrame(woTick);if(WO.paused)return;var e=WO.e,$$=function(i){return document.getElementById(i)};if(!WO.t0)WO.t0=ts;var el=(ts-WO.t0-WO.off)/1000,big=$$('woBig'),cnt=$$('woCnt'),lbl=$$('woLbl'),bar=$$('woBar'),f=$$('wof');if(!f)return;
+ $$('woSet').textContent=woT(4,WO.set)+' / '+WOSETS;var pose=function(t){var s=stFor(e,t);LBLX=1;f.innerHTML=fig(s.p,e,s.k,0)};
+ if(WO.ph=='cd'){pose(0);var n=3-Math.floor(el);if(el>=1&&WO.last!==n&&n>=1){WO.last=n;woBeep(0);woSay(n)}big.textContent=el<1?'':n>=1?n:'GO';lbl.textContent=woT(0);cnt.textContent='';bar.style.width='0';
+  if(el>=4){woBeep(1);woSay(woT(1));big.textContent='';woPh('go')}return}
+ if(WO.ph=='go'){pose(el);var rep=Math.floor(el/e.per),left=e.reps-rep;if(left<=0){big.textContent='';if(WO.set<WOSETS){woSay(woT(3,WOREST));woPh('rest')}else{woBeep(1);woSay(woT(5));woPh('done')}return}
+  if(WO.last!==left){WO.last=left;woBeep(0);woSay(left)}lbl.textContent=woT(6);cnt.textContent=left;bar.style.width=(rep/e.reps*100)+'%';return}
+ if(WO.ph=='rest'){pose(0);var r=Math.ceil(WOREST-el);lbl.textContent=woT(2);cnt.textContent=r>0?r:'';big.textContent='';bar.style.width=(el/WOREST*100)+'%';
+  if(r<=3&&r>=1&&WO.last!==r){WO.last=r;woBeep(0);woSay(r==3?woT(11):r)}if(el>=WOREST){WO.set++;woBeep(1);woSay(woT(1));woPh('go')}return}
+ if(WO.ph=='done'){pose(0);lbl.textContent='';cnt.textContent='🎉';big.textContent='';bar.style.width='100%';$$('woSet').textContent=woT(5);var b=$$('woP');if(b&&!b.dataset.d){b.dataset.d=1;b.textContent=woT(10);b.onclick=function(){woStart()}}}}
+runToggle=function(){woStart()};
+
+</script>
 <script>/* 오행핏 앱에서 프리미엄 항목으로 열 때: 탭 숨기고 생년월일 채우고 해당 항목 보여주기 */
 (function(){var q=new URLSearchParams(location.search),p=q.get('p');if(!p)return;var g=function(i){return document.getElementById(i)};
 try{var hd=document.querySelector('.hd');if(hd)hd.style.display='none';var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';var pp=document.querySelector('.w > p.p');if(pp)pp.style.display='none';
-var L=q.get('lang');if(L&&L!='ko'){if(!LTT[L])L='en';setLang(L)}
+var L=q.get('lang')||'ko';if(!LTT[L]&&L!='ko')L='en';if(L!=LANG)setLang(L)
 if(q.get('bd'))g('bd').value=q.get('bd');if(q.get('bt')){g('bt').value=q.get('bt')}else if(g('nt'))g('nt').checked=true;if(q.get('sx')=='m')g('sx').selectedIndex=1;
 var FK=['jb','jw','bl','zd','sit','ph','st','ex','lf','sl','dv','dh','ft'],P0=null;try{P0=window.parent&&window.parent!==window?window.parent:null}catch(e){}
 var LF=null;try{LF=P0&&P0.LIFE}catch(e){}
