@@ -51,7 +51,7 @@ async function finishPay(paymentId, txid) { // 결제 완료 처리 + 항목 열
 // Render 테스트넷 서비스에서 TESTNET=1, PI_API_KEY(테스트넷 앱 키), PI_WALLET_SEED(테스트넷 지갑 S...) 를 넣으면 작동
 const IS_TESTNET = !!upEnv('testnet');
 let PIB = null; function piBackend() { if (PIB) return PIB; try { const m = require('pi-backend'); const P = m.default || m; PIB = new P(upEnv('piapikey'), upEnv('piwalletseed')); } catch (e) { console.log('pi-backend', e.message) } return PIB }
-const A2U_DONE = new Set();
+const A2U_DONE = new Set(); const A2U_NAMES = new Map();
 function body(req) { return new Promise(res => { let b = ''; req.on('data', d => { b += d; if (b.length > 1e4) req.destroy() }); req.on('end', () => { try { res(JSON.parse(b || '{}')) } catch (e) { res({}) } }) }) }
 http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
@@ -139,8 +139,10 @@ http.createServer(async (req, res) => {
     fs.readFile(path.join(__dirname, 'testpi.html'), (e, b) => { res.writeHead(e ? 404 : 200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }); res.end(e ? 'Not found' : b) }); return;
   }
   if (IS_TESTNET && url === '/a2u/count') {
-    let n = A2U_DONE.size; try { const k = await redis(['KEYS', 'oh:a2u:*']); if (Array.isArray(k)) n = Math.max(n, k.length); } catch (e) {}
-    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ n }));
+    let names = [...A2U_NAMES.values()], db = false;
+    try { const k = await redis(['KEYS', 'oh:a2u:*']); if (Array.isArray(k)) { db = true; const ids = k.map(x => x.slice(7)); const nm = ids.length ? (await redis(['HMGET', 'oh:names', ...ids]) || []) : []; names = ids.map((id, i) => nm[i] || A2U_NAMES.get(id) || '?'); } } catch (e) {}
+    const mask = u => u.length <= 2 ? u[0] + '*' : u.slice(0, 2) + '*'.repeat(Math.min(4, u.length - 2));
+    res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ n: names.length, names: names.map(mask), db }));
   }
   if (IS_TESTNET && url === '/a2u' && req.method === 'POST') {
     const q = await body(req); res.setHeader('Content-Type', 'application/json');
@@ -152,7 +154,7 @@ http.createServer(async (req, res) => {
     try {
       const pid = await pi.createPayment({ amount: 0.01, memo: 'Ohaengfit test reward', metadata: { kind: 'a2u-test' }, uid: me.uid });
       const txid = await pi.submitPayment(pid); await pi.completePayment(pid, txid);
-      A2U_DONE.add(me.uid); redis(['SET', 'oh:a2u:' + me.uid, txid]).catch(() => {});
+      A2U_DONE.add(me.uid); A2U_NAMES.set(me.uid, me.username || '?'); redis(['SET', 'oh:a2u:' + me.uid, txid]).catch(() => {}); if (me.username) redis(['HSET', 'oh:names', me.uid, me.username]).catch(() => {});
       res.writeHead(200); return res.end(JSON.stringify({ ok: true, user: me.username, txid }));
     } catch (e) {
       console.log('a2u', e && (e.response && JSON.stringify(e.response.data) || e.message));

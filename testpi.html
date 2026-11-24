@@ -10,7 +10,7 @@ button:disabled{opacity:.5}#m{margin-top:14px;font-weight:700;min-height:24px}.s
 <button id="b" onclick="go()">π 로그인하고 받기 / Get Test-Pi</button><div id="m"></div><div id="cnt" class="s" style="margin-top:12px;font-size:14px;color:#6d4bb8;font-weight:700"></div></div>
 <script>
 var m=document.getElementById('m'),b=document.getElementById('b');
-function cnt(){fetch('/a2u/count').then(function(r){return r.json()}).then(function(j){document.getElementById('cnt').textContent='지금까지 '+j.n+'명 받았어요 / '+j.n+' received'}).catch(function(){})}cnt();
+function cnt(){fetch('/a2u/count').then(function(r){return r.json()}).then(function(j){document.getElementById('cnt').textContent='지금까지 '+j.n+'명 받았어요 / '+j.n+' received'+(j.names&&j.names.length?'\n'+j.names.join(', '):'')+(j.db?'':' ⚠');document.getElementById('cnt').style.whiteSpace='pre-wrap'}).catch(function(){})}cnt();
 async function go(){b.disabled=true;m.textContent='로그인 중… / Signing in…';var _t=setTimeout(function(){m.style.color='#c92a2a';m.textContent='파이 브라우저(Pi Browser)에서 열어 주세요\nPlease open this link in Pi Browser\nohaengfit-testnet.onrender.com';m.style.whiteSpace='pre-wrap';b.disabled=false},10000);
  try{await Pi.init({version:"2.0"});var a=await Pi.authenticate(['username','payments','wallet_address'],function(){});clearTimeout(_t);
   m.textContent='보내는 중… / Sending…';
