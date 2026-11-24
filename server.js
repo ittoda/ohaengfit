@@ -8,6 +8,7 @@ const FILES = {
   '/privacy': ['privacy.html', 'text/html; charset=utf-8'], '/terms': ['terms.html', 'text/html; charset=utf-8'],
   '/bgm.mp3': ['bgm.mp3', 'audio/mpeg'],
 };
+for (const n of ["done", "eight", "eighteen", "eleven", "fifteen", "five", "four", "fourteen", "letsgo", "next", "nine", "nineteen", "one", "rest", "seven", "seventeen", "six", "sixteen", "ten", "thirteen", "three", "twelve", "twenty", "two"]) FILES['/voice/' + n + '.mp3'] = ['voice/' + n + '.mp3', 'audio/mpeg'];
 function piMe(token) { // Pi 서버에 이 로그인 토큰이 진짜인지 물어봐요
   return new Promise(res => {
     const rq = https.request({ host: 'api.minepi.com', path: '/v2/me', headers: { Authorization: 'Bearer ' + token }, timeout: 8000 }, r => {
