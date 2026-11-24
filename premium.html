@@ -540,6 +540,36 @@ var out=document.getElementById("out");MYD={bd:bd,R:R,cnt:cnt,weak:weak,strong:s
 [["sit","v1","시간"],["ph","v2","시간"],["st","v3","시간"],["ex","v4","회"],["dh","v5","시간"]].forEach(function(a){var e=document.getElementById(a[0]);e.oninput=function(){document.getElementById(a[1]).textContent=e.value+a[2]}});
 try{var sl=localStorage.getItem('lg');if(sl&&sl!='ko')setLang(sl)}catch(e){}
 </script>
+<script>
+/* 운동 그림: 단순한 막대 인형(졸라맨) 스타일 — 회색 몸, 쓰는 근육만 빨갛게, 이름표 */
+function figFlat(p,e,k,fc){var g=e.g||190,hip=[p.x,p.y],tq=p.t+p.s,mid=ad(hip,dU(p.t),35),so=ad(mid,dU(tq),35),nk=ad(so,dU(tq+p.h),8),hc=ad(so,dU(tq+p.h),21),u=function(v,d){return v!==undefined?v:d};
+var leg=function(a,b,fx,fy){var kn,an;if(fx!==undefined){var r=ik(hip,[fx,fy],48,46,-1);kn=r.k;an=r.e}else{kn=ad(hip,dD(a),48);an=ad(kn,dD(a+b),46)}return[kn,an,[an[0]+12,an[1]]]};
+var arm=function(ua,fa,hg,hx,hy,kn){var el,wr,fb;if(kn){hx=kn[0];hy=kn[1]}if(hx!==undefined){var r=ik(so,[hx,hy],34,30,1);el=r.k;wr=r.e;fb=Math.atan2(wr[0]-el[0],wr[1]-el[1])*180/Math.PI}else{el=ad(so,dD(ua),34);fb=ua+fa;wr=ad(el,dD(fb),30)}return[el,wr,ad(wr,dD(fb+hg),10)]};
+var L1=leg(p.th,p.sh,p.fx,p.fy),L2=leg(u(p.th2,p.th),u(p.sh2,p.sh),u(p.fx2,p.fx),u(p.fy2,p.fy)),A1=arm(p.ua,p.fa,p.hd,p.hx,p.hy,p.hk?L1[0]:null),A2=arm(u(p.ua2,p.ua),u(p.fa2,p.fa),u(p.hd2,p.hd),u(p.hx2,p.hx),u(p.hy2,p.hy),p.hk?L1[0]:null);
+var Sg={tl:[hip,mid],tu:[mid,so],torso:[hip,mid,so],neck:[so,nk],th:[hip,L1[0]],sh:[L1[0],L1[1]],ua:[so,A1[0]],fa:[A1[0],A1[1]],hd:[A1[1],A1[2]],th2:[hip,L2[0]],sh2:[L2[0],L2[1]]};
+var F='#d3d3cc',B='#b1b1aa',O='#8a8a84',R='#d4544e',f1=function(n){return(+n).toFixed(1)},ln=function(P,c,w){return `<polyline points='${P.map(function(q){return f1(q[0])+','+f1(q[1])}).join(' ')}' fill='none' stroke='${c}' stroke-width='${w}' stroke-linecap='round' stroke-linejoin='round'/>`};
+var s=`<line x1='-60' x2='400' y1='${g}' y2='${g}' stroke='#b5b5ae' stroke-width='1.2'/>`;
+if(e.wall)s+=`<rect x='${e.wall-3}' y='-16' width='6' height='${g+16}' fill='#2b2b29' rx='2'/>`;
+if(e.ch){var c=e.ch;s+=`<rect x='${c[0]}' y='${c[2]-4}' width='${c[1]-c[0]}' height='7' rx='3' fill='#2b2b29'/><rect x='${c[0]-4}' y='${c[2]-48}' width='5' height='48' rx='2' fill='#2b2b29'/>`+ln([[c[0]+6,c[2]+3],[c[0]+6,g]],O,4)+ln([[c[1]-6,c[2]+3],[c[1]-6,g]],O,4)}
+s+=ln([hip,L2[0],L2[1],L2[2]],B,12)+ln([so,A2[0],A2[1],A2[2]],B,9);
+var d=dU(tq),nx=-d[1],ny=d[0],w1=10,w2=11;
+s+=`<polygon points='${[[hip[0]+nx*w1,hip[1]+ny*w1],[so[0]+nx*w2,so[1]+ny*w2],[so[0]-nx*w2,so[1]-ny*w2],[hip[0]-nx*w1,hip[1]-ny*w1]].map(function(q){return f1(q[0])+','+f1(q[1])}).join(' ')}' fill='${F}' stroke='${O}' stroke-width='0.8' stroke-linejoin='round'/>`;
+s+=ln([so,nk],F,7)+`<circle cx='${f1(hc[0])}' cy='${f1(hc[1])}' r='11' fill='${F}' stroke='${O}' stroke-width='0.8'/>`;
+s+=ln([hip,L1[0],L1[1],L1[2]],F,12)+ln([so,A1[0],A1[1],A1[2]],F,9);
+var mm=e.m||[],names=mm.length?mm.map(function(q){return String(q[5]).replace(/\([^)]*\)/g,'').split('·')[0].trim()}):String(e.mu||'').replace(/\([^)]*\)/g,'').split(/[,，、]\s*/).map(function(x){return x.trim()}).filter(Boolean),lab=(typeof LBLX!=='undefined'&&LBLX)||fc>0;
+var LB=[],used={},list=mm.length?mm.map(function(q){return{sg:q[0],a:q[1],b:q[2],sd:q[4],nm:String(q[5]).replace(/\([^)]*\)/g,'').trim(),st:String(q[6]||'')[0]=='s'}}):(e.hl||[]).map(function(h,i){return{sg:h[0],a:h[1],b:h[2],sd:'a',nm:names[i]||'',st:false}});
+ var fx=dU(tq+p.h+90);list.forEach(function(q,i){if(!Sg[q.sg])return;var P=cut(Sg[q.sg],q.a,q.b),n=used[q.sg]=(used[q.sg]||0)+1;if(n>1){var dd=(q.sd=='a'?1:-1)*4;P=P.map(function(z){return[z[0]+fx[0]*dd,z[1]+fx[1]*dd]})}
+  var col=q.st?'#3b7dd8':(i==0?'#c9362f':'#d9625b');s+=ln(P,col,i==0?6:5).replace("stroke-width","opacity='"+(0.8+0.2*k).toFixed(2)+"' stroke-width");
+  if(lab&&q.nm){var m=P.length==2?[(P[0][0]+P[1][0])/2,(P[0][1]+P[1][1])/2]:P[Math.floor(P.length/2)];LB.push({m:m,nm:q.nm,st:q.st})}});
+ LB.sort(function(x,y){return x.m[1]-y.m[1]});var yy=-999;LB.forEach(function(L){var ty=Math.max(L.m[1]-4,yy+15,-4);yy=ty;var tx=Math.max(252,L.m[0]+30);
+  s+=`<line x1='${f1(L.m[0])}' y1='${f1(L.m[1])}' x2='${f1(tx-3)}' y2='${f1(ty-3)}' stroke='#999' stroke-width='0.7' stroke-dasharray='2 2'/><text x='${f1(tx)}' y='${f1(ty)}' font-size='9' fill='${L.st?'#2f6fc4':'#555'}'>${L.nm}</text>`});
+FCP=null;return s}
+fig=function(p,e,k,fc){return figFlat(p,e,k,fc)};
+(function(){var _ef=exFocus;exFocus=function(){cur.zoom=0;_ef();var b=document.getElementById('zb');if(b)b.remove();
+ var e=EX[RX[cur.r][cur.i]],mm=e.m||[],sp=document.querySelectorAll('#mod .t span b');mm.forEach(function(q,i){if(sp[i])sp[i].style.color=String(q[6]||'')[0]=='s'?'#3b7dd8':'#d4544e'});
+ var dn=0;[].slice.call(document.querySelectorAll('#mod div,#mod .d')).forEach(function(d){if(/진한 빨강|빨갛게 표시돼요/.test(d.textContent)&&!d.querySelector('div')){if(dn++)d.remove();else d.textContent='빨강 = 힘을 쓰는 근육 · 파랑 = 늘어나는 근육'}})};togZoom=function(){cur.zoom=0}})();
+
+</script>
 <script>/* 오행핏 앱에서 프리미엄 항목으로 열 때: 탭 숨기고 생년월일 채우고 해당 항목 보여주기 */
 (function(){var q=new URLSearchParams(location.search),p=q.get('p');if(!p)return;var g=function(i){return document.getElementById(i)};
 try{var hd=document.querySelector('.hd');if(hd)hd.style.display='none';var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';var pp=document.querySelector('.w > p.p');if(pp)pp.style.display='none';
