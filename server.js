@@ -25,8 +25,10 @@ function redis(cmd){const url=upEnv('upstashredisresturl'),tok=upEnv('upstashred
     const rq=https.request({host:u.host,path:u.pathname==='/'?'/':u.pathname,method:'POST',headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)},timeout:8000},r=>{let b='';r.on('data',d=>b+=d);r.on('end',()=>{try{res(JSON.parse(b).result)}catch(e){res(null)}})});
     rq.on('error',()=>res(null));rq.on('timeout',()=>{rq.destroy();res(null)});rq.end(body)})}
 const ME_CACHE=new Map(); // 토큰 → uid (잠깐 기억해서 Pi 서버에 매번 묻지 않게)
-async function uidOf(token){if(!token)return null;const c=ME_CACHE.get(token);if(c&&Date.now()-c.t<3600e3)return c.uid;const me=await piMe(String(token));if(!me)return null;ME_CACHE.set(token,{uid:me.uid,t:Date.now()});return me.uid}
+async function uidOf(token){if(!token)return null;const c=ME_CACHE.get(token);if(c&&Date.now()-c.t<3600e3)return c.uid;const me=await piMe(String(token));if(!me)return null;ME_CACHE.set(token,{uid:me.uid,t:Date.now()});if(me.username)redis(['HSET','oh:names',me.uid,me.username]).catch(()=>{});return me.uid}
 // ===== 프리미엄: 항목별 0.1π 또는 50토큰, 오늘 하루 열림 (한국 자정에 다시 잠김) =====
+const AD_PT = 10, AD_MAX = 20; // 광고 1회 10토큰, 하루 20회
+function rankSet(uid, bal) { return redis(['ZADD', 'oh:rank', String(bal || 0), uid]).catch(() => null) } // 토큰 순위
 const PREM_ITEMS = ['body', 'food', 'ex', 'nut', 'palm'], PREM_PI = 0.1, PREM_TOKENS = 50;
 async function getJSON(k, d) { try { const v = await redis(['GET', k]); return v ? JSON.parse(v) : d } catch (e) { return d } }
 const kstDay = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // 한국 날짜
@@ -64,18 +66,44 @@ http.createServer(async (req, res) => {
     const v = await redis(['GET', 'oh:me:' + uid]); let data = null; try { data = v ? JSON.parse(v) : null } catch (e) {}
     res.writeHead(200); return res.end(JSON.stringify({ ok: true, data }));
   }
-  if (url === '/checkin' && req.method === 'POST') { // 출석 체크: 하루 10토큰, 7일째 +30 (7일 = 100토큰), 한국 날짜 기준
+  if (url === '/checkin' && req.method === 'POST') { // 출석 체크: 하루 10토큰, 7일째 +30 (7일 = 100토큰), 한국 날짜 기준. run = 끊기지 않은 전체 연속 출석일(출석왕 이벤트용)
     const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
     if (!uid) { res.writeHead(401); return res.end('{"ok":false}'); }
-    const day = o => new Date(Date.now() + 9 * 3600e3 - o * 864e5).toISOString().slice(0, 10), today = day(0), yest = day(1);
-    let st = { bal: 0, streak: 0, last: '' }; try { const v = await redis(['GET', 'oh:pt:' + uid]); if (v) st = Object.assign(st, JSON.parse(v)) } catch (e) {}
-    if (st.last !== today && st.last !== yest) st.streak = 0; // 하루 빠지면 처음부터
-    if (q.peek || st.last === today) { res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, streak: st.streak, done: st.last === today, award: 0, un: await unlocks(uid) })); }
-    st.streak = st.streak >= 7 ? 1 : st.streak + 1; const award = 10 + (st.streak === 7 ? 30 : 0);
+    const today = kstDay(), yest = new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10);
+    let st = { bal: 0, streak: 0, last: '', run: 0, adDay: '', adN: 0 }; try { const v = await redis(['GET', 'oh:pt:' + uid]); if (v) st = Object.assign(st, JSON.parse(v)) } catch (e) {}
+    if (st.last !== today && st.last !== yest) { st.streak = 0; st.run = 0 } // 하루 빠지면 처음부터
+    const out = (done, award) => JSON.stringify({ ok: true, bal: st.bal, streak: st.streak, run: st.run || 0, done, award, adN: st.adDay === today ? st.adN : 0, adMax: AD_MAX, un: null });
+    if (q.peek || st.last === today) { if (st.bal > 0) rankSet(uid, st.bal); const o = JSON.parse(out(st.last === today, 0)); o.un = await unlocks(uid); res.writeHead(200); return res.end(JSON.stringify(o)); }
+    st.streak = st.streak >= 7 ? 1 : st.streak + 1; st.run = (st.run || 0) + 1; const award = 10 + (st.streak === 7 ? 30 : 0);
     st.bal += award; st.last = today;
     const r = await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)]);
     if (r !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
-    res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, streak: st.streak, done: true, award, un: await unlocks(uid) }));
+    rankSet(uid, st.bal);
+    const o = JSON.parse(out(true, award)); o.un = await unlocks(uid); res.writeHead(200); return res.end(JSON.stringify(o));
+  }
+  if (url === '/rank' && req.method === 'POST') { // 토큰 순위 상위 20명 + 내 순위 (아이디는 일부 가려서)
+    const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
+    const z = await redis(['ZREVRANGE', 'oh:rank', '0', '19', 'WITHSCORES']) || [];
+    const ids = [], top = []; for (let i = 0; i < z.length; i += 2) { ids.push(z[i]); top.push({ s: +z[i + 1] }) }
+    const nm = ids.length ? (await redis(['HMGET', 'oh:names', ...ids]) || []) : [];
+    const mask = n => { n = String(n || 'pioneer'); return n.length <= 3 ? n[0] + '**' : n.slice(0, Math.ceil(n.length / 2)) + '*'.repeat(Math.min(4, Math.floor(n.length / 2))) };
+    top.forEach((t, i) => { t.n = mask(nm[i]); t.me = ids[i] === uid });
+    let me = null; if (uid) { const rk = await redis(['ZREVRANK', 'oh:rank', uid]); const sc = await redis(['ZSCORE', 'oh:rank', uid]); if (rk !== null && rk !== undefined) me = { r: +rk + 1, s: +sc } }
+    res.writeHead(200); return res.end(JSON.stringify({ ok: true, top, me }));
+  }
+  if (url === '/ad/reward' && req.method === 'POST') { // 보상형 광고 1회 = 10토큰, 하루 10회. Pi 서버로 광고 시청을 확인한 뒤에만 지급
+    const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
+    if (!uid || !q.adId) { res.writeHead(400); return res.end('{"ok":false}'); }
+    const ad = await piApi('GET', '/ads_network/status/' + encodeURIComponent(String(q.adId)));
+    if (!ad || ad.mediator_ack_status !== 'granted') { res.writeHead(200); return res.end('{"ok":false,"why":"verify"}'); }
+    const used = await redis(['SET', 'oh:ad:' + String(q.adId), uid, 'NX', 'EX', '172800']); // 같은 광고로 두 번 받기 방지
+    if (used !== 'OK') { res.writeHead(200); return res.end('{"ok":false,"why":"used"}'); }
+    const today = kstDay(); let st = await getJSON('oh:pt:' + uid, { bal: 0, streak: 0, last: '' });
+    if (st.adDay !== today) { st.adDay = today; st.adN = 0 }
+    if (st.adN >= AD_MAX) { res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'max', bal: st.bal, adN: st.adN, adMax: AD_MAX })); }
+    st.adN++; st.bal = (st.bal || 0) + AD_PT;
+    if ((await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)])) !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
+    rankSet(uid, st.bal); res.writeHead(200); return res.end(JSON.stringify({ ok: true, award: AD_PT, bal: st.bal, adN: st.adN, adMax: AD_MAX }));
   }
   if (url === '/premium/token' && req.method === 'POST') { // 50토큰으로 열기
     const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
@@ -84,7 +112,7 @@ http.createServer(async (req, res) => {
     if (un.indexOf(q.item) >= 0) { res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, un })); }
     if ((st.bal || 0) < PREM_TOKENS) { res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'bal', bal: st.bal || 0, un })); }
     st.bal -= PREM_TOKENS; if ((await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)])) !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
-    un = await addUnlock(uid, q.item); res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, un }));
+    rankSet(uid, st.bal); un = await addUnlock(uid, q.item); res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, un }));
   }
   if (url === '/pay/approve' && req.method === 'POST') { // Pi 결제 승인
     const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
