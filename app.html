@@ -699,6 +699,21 @@ function songView(){var td=today(),bd=C.sol,dt=dn(td[0],td[1],td[2])-dn(bd[0],bd
 
 /* 방문 기기 수 세기 (사장님 통계용, 이름·개인정보 없이 기기마다 무작위 번호만) */
 try{var DV=ls('oh_dev');if(!DV){DV=Date.now().toString(36)+Math.random().toString(36).slice(2,10);ls('oh_dev',DV)}if(location.protocol.indexOf('http')==0)fetch('/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:DV,l:LANG})}).catch(function(){})}catch(e){}
+/* Pi 브라우저가 아니면(카톡·사파리·크롬 등) Pi 브라우저로 열도록 안내 — Pi 로그인은 Pi 브라우저에서만 돼요 */
+(function(){try{var ua=navigator.userAgent||'';var inFrame=false;try{inFrame=window.self!==window.top}catch(_){inFrame=true}if(/PiBrowser/i.test(ua)||inFrame||!/^https?:$/.test(location.protocol)||location.hostname=='localhost')return; /* 샌드박스·PiNet 안(iframe)에서는 안 띄워요 */
+  var H=location.host,ko=LANG=='ko',an=/Android/i.test(ua),store=an?'https://play.google.com/store/apps/details?id=pi.browser':'https://apps.apple.com/app/pi-browser/id1560911608';
+  var go=an?'intent://'+H+'#Intent;scheme=pi;package=pi.browser;S.browser_fallback_url='+encodeURIComponent(store)+';end':'pi://'+H;
+  var T=ko?['파이 브라우저에서 열어 주세요','오행핏은 파이 로그인을 써서 파이 브라우저에서만 제대로 돼요.','π 파이 브라우저로 열기','주소 복사하기','파이 브라우저 설치하기','그냥 둘러볼게요','안 열리면: 파이 브라우저를 켜고 주소창에 '+H+' 를 입력해 주세요','복사했어요! 파이 브라우저 주소창에 붙여 넣으세요']:['Open in Pi Browser','Ohaeng Fit uses Pi login, so it works in the Pi Browser.','π Open in Pi Browser','Copy address','Get Pi Browser','Just look around','If it does not open: start Pi Browser and type '+H,'Copied! Paste it in the Pi Browser address bar'];
+  var d=document.createElement('div');d.id='openPi';d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(36,20,70,.92);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
+  var b='display:block;width:100%;margin-top:10px;padding:14px;border-radius:14px;font-size:16px;font-weight:700;border:0;text-decoration:none;text-align:center;box-sizing:border-box;';
+  d.innerHTML='<div style="background:#fff;border-radius:22px;max-width:360px;width:100%;padding:26px 20px;text-align:center;color:#2b1d4a"><div style="font-size:44px">🌿</div><h2 style="margin:6px 0 8px;font-size:21px">'+T[0]+'</h2><p style="margin:0 0 10px;color:#6a5b8a;font-size:14px;line-height:1.5">'+T[1]+'</p>'+
+   '<a id="opGo" href="'+go+'" style="'+b+'background:#7b4fd6;color:#fff">'+T[2]+'</a><button id="opCopy" style="'+b+'background:#efe8ff;color:#5b34b8">'+T[3]+'</button><a href="'+store+'" target="_blank" rel="noopener" style="'+b+'background:#fff;color:#7b4fd6;border:2px solid #d9ccff">'+T[4]+'</a>'+
+   '<p id="opHelp" hidden style="margin:12px 0 0;font-size:13px;color:#8a5a00;background:#fff6dc;border-radius:10px;padding:10px">'+T[6]+'</p><button id="opStay" style="margin-top:12px;background:none;border:0;color:#9a8cb8;font-size:14px;text-decoration:underline">'+T[5]+'</button></div>';
+  document.body.appendChild(d);
+  document.getElementById('opGo').onclick=function(){setTimeout(function(){document.getElementById('opHelp').hidden=false},1800)};
+  document.getElementById('opCopy').onclick=function(e){var u='https://'+H,el=e.target;try{navigator.clipboard.writeText(u).then(function(){el.textContent=T[7]},function(){prompt(T[3],u)})}catch(_){prompt(T[3],u)}};
+  document.getElementById('opStay').onclick=function(){d.remove()};
+}catch(e){}})();
 render();
 
 </script>
