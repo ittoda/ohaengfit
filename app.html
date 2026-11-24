@@ -223,7 +223,8 @@ document.addEventListener('visibilitychange',function(){if(!BGM)return;if(docume
 /* ===== 화면 ===== */
 var VIEW='intro';
 function go(v){VIEW=v;if(v!='tj')TJM=0;render();window.scrollTo(0,0)}
-function hdr(x){return '<div class="top"><button class="back" onclick="go(\'home\')">← '+t('처음')+'</button><b>'+x+'</b></div>'}
+function sndBtn(){return '<button class="snd" onclick="bgmToggle()" aria-label="music">'+(BGMON?'🔊 Music on':'🔇 Music off')+'</button>'}
+function hdr(x){return '<div class="top"><button class="back" onclick="go(\'home\')">← '+t('처음')+'</button><b>'+x+'</b><span style="margin-left:auto">'+sndBtn()+'</span></div>'}
 function render(){var a=$('#app');document.documentElement.lang=LANG;document.documentElement.dir=LANG=='ar'?'rtl':'ltr';
   if(!C&&VIEW!='form'&&VIEW!='intro')VIEW='form';
   a.innerHTML=VIEW=='intro'?introView():VIEW=='form'?formView():VIEW=='tj'?tjView():VIEW=='saju'?sajuView():VIEW=='today'?todayView():VIEW=='song'?songView():homeView()}
@@ -232,7 +233,7 @@ function infoLine(){var s=C.sol,l=C.lun;
   return D3(s[0],s[1],s[2])+' ('+t('양력')+') · '+t('음력')+' '+t(l.lp?'윤{0}월 {1}일':'{0}월 {1}일',l.m,l.d)+'<br>'+(ME.si<0?t('태어난 시 모름'):SJ(ME.si))+' · '+t(ME.sx=='m'?'남성':'여성')}
 function homeView(){
   var av=PHOTO?'<img src="'+PHOTO+'" alt="">':ANE[C.ani],td=today();
-  var h='<div class="hbar">'+langSel()+'<button class="snd" onclick="bgmToggle()">'+(BGMON?'🔊 '+t('음악 켬'):'🔇 '+t('음악 끔'))+'</button></div><div class="c prof"><button class="avaw" onclick="$(\'#photo\').click()" aria-label="photo"><span class="ava">'+av+'</span><span class="cam">📷</span></button>'+
+  var h='<div class="hbar">'+langSel()+''+sndBtn()+'</div><div class="c prof"><button class="avaw" onclick="$(\'#photo\').click()" aria-label="photo"><span class="ava">'+av+'</span><span class="cam">📷</span></button>'+
   '<div style="min-width:0"><div class="nm">'+esc(PINAME||t('파이오니어'))+'</div><div class="chips"><span class="chip">'+ANE[C.ani]+' '+t('{0}띠',t(ANI[C.ani]))+'</span><span class="chip">'+t('일간')+' '+(LANG=='ko'?ST[C.ds]:'')+SH[C.ds]+' · '+ELT(C.me)+'</span></div>'+
   '<div class="info">'+infoLine()+'</div><button class="edit" onclick="go(\'form\')">✏️ '+t('내 정보 고치기')+'</button></div></div>';
   h+='<div class="menu">'+
@@ -263,7 +264,7 @@ function formView(){FM=FM||Object.assign({y:1990,m:1,d:1,cal:'s',lp:false,si:-1,
   for(var m=1;m<=12;m++)mo+='<option'+(m==FM.m?' selected':'')+'>'+m+'</option>';
   for(var d=1;d<=31;d++)do_+='<option'+(d==FM.d?' selected':'')+'>'+d+'</option>';
   SIJIN.forEach(function(s,i){so+='<option value="'+i+'"'+(i==FM.si?' selected':'')+'>'+(LANG=='ko'?s:t(s.split(' ')[0])+' '+s.split(' ')[1])+'</option>'});
-  return (C?hdr(t('내 정보')):'<div style="text-align:center;margin:10px 0 16px"><div style="width:96px;height:96px;margin:0 auto 6px;filter:drop-shadow(0 8px 18px #5a3aa855)">'+LOGO+'</div><b style="font-size:20px">'+(PINAME?t('{0}님, 반가워요!',esc(PINAME)):t('오행핏에 오신 걸 환영해요!'))+'</b><p class="sub" style="margin:4px 0 0">'+t('생년월일을 한 번만 넣으면 모든 운세에 쓰여요.')+'</p></div>')+
+  return (C?hdr(t('내 정보')):'<div style="text-align:right">'+sndBtn()+'</div><div style="text-align:center;margin:10px 0 16px"><div style="width:96px;height:96px;margin:0 auto 6px;filter:drop-shadow(0 8px 18px #5a3aa855)">'+LOGO+'</div><b style="font-size:20px">'+(PINAME?t('{0}님, 반가워요!',esc(PINAME)):t('오행핏에 오신 걸 환영해요!'))+'</b><p class="sub" style="margin:4px 0 0">'+t('생년월일을 한 번만 넣으면 모든 운세에 쓰여요.')+'</p></div>')+
   '<div class="c"><label>'+t('달력')+'</label><div class="seg" id="cal"><button class="'+(FM.cal=='s'?'on':'')+'" onclick="FM.cal=\'s\';render()">'+t('양력')+'</button><button class="'+(FM.cal=='l'?'on':'')+'" onclick="FM.cal=\'l\';render()">'+t('음력')+'</button></div>'+
   '<label>'+t('생년월일')+'</label><div class="r3"><select id="fy" aria-label="year">'+yo+'</select><select id="fm" aria-label="month">'+mo+'</select><select id="fd" aria-label="day">'+do_+'</select></div>'+
   (FM.cal=='l'?'<label class="chk"><input type="checkbox" id="flp"'+(FM.lp?' checked':'')+'> '+t('윤달이에요')+'</label>':'')+
@@ -339,7 +340,7 @@ function tjView(){var Y=TJY||TY(),g=tojeong(Y),u=UP[g.up],m=MID[g.mid],l=LO[g.lo
     M.map(function(x){return '<button class="mb '+x.lv+'" onclick="TJM='+x.k+';render();window.scrollTo(0,0)"><span>'+LVI[x.lv]+'</span><b>'+t('{0}월',x.k)+'</b></button>'}).join('')+'</div></div>';
   h+='<p class="note">'+t('괘는 전통 토정비결 계산법(나이·태세수, 생월 월건수, 생일 일진수)으로 뽑았고, 풀이는 오행핏이 요즘 생활에 맞게 새로 쓴 내용이에요. 재미와 참고용으로 봐 주세요.')+'</p>';
   return h}
-function tjMonthView(Y,g,M){var x=M[TJM-1],h='<div class="top"><button class="back" onclick="TJM=0;render();window.scrollTo(0,0)">'+t('← 올해 운세')+'</button><b>'+t('토정비결')+'</b></div>';
+function tjMonthView(Y,g,M){var x=M[TJM-1],h='<div class="top"><button class="back" onclick="TJM=0;render();window.scrollTo(0,0)">'+t('← 올해 운세')+'</button><b>'+t('토정비결')+'</b><span style="margin-left:auto">'+sndBtn()+'</span></div>';
   h+='<div class="c hero"><div class="gw">'+t('{0}년',Y)+' · '+t('음력')+'</div><div style="font-size:44px;line-height:1.2">'+LVI[x.lv]+'</div><div class="tt">'+t('{0}월 운세',x.k)+'</div><span class="lvb '+x.lv+'">'+t(LVT[x.lv])+'</span></div>';
   h+='<div class="c"><p class="p" style="font-size:17px">'+t(x.txt)+'</p><h3>'+t('이달에 눈여겨볼 분야')+' · '+TFI[x.f]+' '+t(TF[x.f])+'</h3><p class="p">'+t(TIPS[x.f][x.tip])+'</p><p class="p">📅 '+t('이달의 행운의 날: 음력 {0}일',x.day)+'</p></div>';
   h+='<div class="mnav"><button class="btn ghost" '+(x.k==1?'disabled':'')+' onclick="TJM='+(x.k-1)+';render()">‹ '+t('이전 달')+'</button><button class="btn ghost" '+(x.k==12?'disabled':'')+' onclick="TJM='+(x.k+1)+';render()">'+t('다음 달')+' ›</button></div>';
