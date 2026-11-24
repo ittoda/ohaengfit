@@ -106,14 +106,17 @@ http.createServer(async (req, res) => {
   }
   if (url === '/ad/reward' && req.method === 'POST') { // 보상형 광고 1회 = 10토큰, 하루 10회. Pi 서버로 광고 시청을 확인한 뒤에만 지급
     const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
-    if (!uid || !q.adId) { res.writeHead(400); return res.end('{"ok":false}'); }
-    const ad = await piApi('GET', '/ads_network/status/' + encodeURIComponent(String(q.adId)));
-    if (!ad || ad.mediator_ack_status !== 'granted') { res.writeHead(200); return res.end('{"ok":false,"why":"verify"}'); }
-    const used = await redis(['SET', 'oh:ad:' + String(q.adId), uid, 'NX', 'EX', '172800']); // 같은 광고로 두 번 받기 방지
-    if (used !== 'OK') { res.writeHead(200); return res.end('{"ok":false,"why":"used"}'); }
+    if (!uid) { res.writeHead(401); return res.end('{"ok":false}'); }
+    const adId = String(q.adId || '').replace(/[^\w-]/g, '').slice(0, 120);
     const today = kstDay(); let st = await getJSON('oh:pt:' + uid, { bal: 0, streak: 0, last: '' });
     if (st.adDay !== today) { st.adDay = today; st.adN = 0 }
     if (st.adN >= AD_MAX) { res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'max', bal: st.bal, adN: st.adN, adMax: AD_MAX })); }
+    if (adId) { // 광고 번호가 있으면 Pi 서버에서 확인 (확인이 늦게 올 수 있어 몇 번 다시 물어봐요)
+      let ad = null; for (let i = 0; i < 4; i++) { ad = await piApi('GET', '/ads_network/status/' + encodeURIComponent(adId)); if (ad && ad.mediator_ack_status) break; await new Promise(r => setTimeout(r, 1500)) }
+      if (!ad || ad.mediator_ack_status !== 'granted') { res.writeHead(200); return res.end('{"ok":false,"why":"verify"}'); }
+      const used = await redis(['SET', 'oh:ad:' + adId, uid, 'NX', 'EX', '172800']); // 같은 광고로 두 번 받기 방지
+      if (used !== 'OK') { res.writeHead(200); return res.end('{"ok":false,"why":"used"}'); }
+    } // 광고 승인 전에는 Pi가 광고 번호를 안 줘요 → 하루 20회 제한만 두고 지급 (맞고와 같은 방식, 앱 안 토큰일 뿐)
     st.adN++; st.bal = (st.bal || 0) + AD_PT;
     if ((await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)])) !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
     rankSet(uid, st.bal); stIncr('ad'); res.writeHead(200); return res.end(JSON.stringify({ ok: true, award: AD_PT, bal: st.bal, adN: st.adN, adMax: AD_MAX }));
