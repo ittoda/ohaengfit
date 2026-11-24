@@ -21,7 +21,8 @@ http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/healthz') { res.writeHead(200); return res.end('ok'); }
   if (url === '/validation-key.txt') {
-    let key = (process.env.PI_VALIDATION_KEY || '').trim();
+    const ek = Object.keys(process.env).find(k => k.replace(/[^a-z]/gi, '').toLowerCase() === 'pivalidationkey'); // 대소문자·띄어쓰기 달라도 찾기
+    let key = String((ek && process.env[ek]) || '').trim();
     if (!key) { try { key = fs.readFileSync(path.join(__dirname, 'validation-key.txt'), 'utf8').trim() } catch (e) {} }
     if (!key) { res.writeHead(404); return res.end('Not found'); }
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end(key);
