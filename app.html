@@ -265,7 +265,7 @@ function sndBtn(){return '<button class="snd" onclick="bgmToggle()" aria-label="
 function hdr(x){return '<div class="top"><button class="back" onclick="go(\'home\')">← '+t('처음')+'</button><b>'+x+'</b><span style="margin-left:auto">'+sndBtn()+'</span></div>'}
 function render(){var a=$('#app');document.documentElement.lang=LANG;document.documentElement.dir=LANG=='ar'?'rtl':'ltr';
   if(!C&&VIEW!='form'&&VIEW!='intro')VIEW='form';
-  a.innerHTML=VIEW=='intro'?introView():VIEW=='form'?formView():VIEW=='tj'?tjView():VIEW=='saju'?sajuView():VIEW=='today'?todayView():VIEW=='gh'?ghView():VIEW=='song'?songView():homeView();if(VIEW=='song')setTimeout(initScratch,0)}
+  a.innerHTML=VIEW=='intro'?introView():VIEW=='form'?formView():VIEW=='tj'?tjView():VIEW=='saju'?sajuView():VIEW=='today'?todayView():VIEW=='gh'?ghView():VIEW=='song'?songView():homeView();if(VIEW=='song')setTimeout(function(){initScratch();showCard()},0)}
 function SJ(i){var s=SIJIN[i];return LANG=='ko'?s.split(' ')[0]:t(s.split(' ')[0])}
 function infoLine(){var s=C.sol,l=C.lun;
   return D3(s[0],s[1],s[2])+' ('+t('양력')+') · '+t('음력')+' '+t(l.lp?'윤{0}월 {1}일':'{0}월 {1}일',l.m,l.d)+'<br>'+(ME.si<0?t('태어난 시 모름'):SJ(ME.si))+' · '+t(ME.sx=='m'?'남성':'여성')}
@@ -498,7 +498,7 @@ function clover(x,cx,cy,s){x.save();x.translate(cx,cy);x.scale(s/50,s/50);x.fill
   x.strokeStyle='#2e7d3a';x.lineWidth=5;x.lineCap='round';x.beginPath();x.moveTo(2,4);x.quadraticCurveTo(8,26,20,40);x.stroke();x.restore()}
 function wrapTxt(x,s,maxW){var out=[],cur='',ws=LANG=='zh'||LANG=='ja'||LANG=='th'?s.split(''):s.split(' '),sep=ws.length>1&&s.indexOf(' ')>=0?' ':'';
   ws.forEach(function(w){var tt=cur?cur+sep+w:w;if(x.measureText(tt).width>maxW&&cur){out.push(cur);cur=w}else cur=tt});if(cur)out.push(cur);return out}
-function saveQuote(){if(!QSAVE)return;var W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d'),F='-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+function drawCard(cb){var W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d'),F='-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif';
   x.fillStyle='#fffaf0';x.fillRect(0,0,W,H);
   var gd=x.createLinearGradient(0,0,W,H);gd.addColorStop(0,'#c9a24a');gd.addColorStop(.5,'#f1dc9a');gd.addColorStop(1,'#b8892e');
   x.strokeStyle=gd;x.lineWidth=22;x.strokeRect(40,40,W-80,H-80);x.lineWidth=4;x.strokeRect(78,78,W-156,H-156);
@@ -513,8 +513,12 @@ function saveQuote(){if(!QSAVE)return;var W=1080,H=1350,c=document.createElement
   var nm=PINAME||t('파이오니어');x.textAlign='center';x.save();x.translate(W-270,H-215);x.rotate(-.12);x.font='800 44px serif';var tw=Math.max(150,x.measureText(nm).width+60);
   x.strokeStyle='rgba(200,40,50,.85)';x.lineWidth=8;x.beginPath();x.roundRect(-tw/2,-60,tw,120,22);x.stroke();x.lineWidth=2;x.beginPath();x.roundRect(-tw/2+12,-48,tw-24,96,14);x.stroke();
   x.fillStyle='rgba(200,40,50,.9)';x.textBaseline='middle';x.fillText(nm,0,4);x.restore();
+  cb(c)}}
+function saveQuote(){if(!QSAVE)return;drawCard(function(c){
   c.toBlob(function(b){var fn='ohaengfit_'+QSAVE.d.join('')+'.png',file;try{file=new File([b],fn,{type:'image/png'})}catch(e){}
-    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file]}).catch(function(){showImg(c,fn)})}else showImg(c,fn)},'image/png')}}
+    var ok=file&&navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}));
+    if(ok){navigator.share({files:[file]}).catch(function(e){if(!e||e.name!='AbortError')showImg(c,fn)})}else showImg(c,fn)},'image/png')})}
+function showCard(){var im=document.getElementById('qcard');if(im&&QSAVE)drawCard(function(c){im.src=c.toDataURL('image/png')})}
 function showImg(c,fn){var u=c.toDataURL('image/png'),d=document.createElement('div');d.className='imgpop';
   d.innerHTML='<div class="ip"><img src="'+u+'"><p>'+t('이미지를 길게 눌러 사진에 저장하세요')+'</p><a class="btn" href="'+u+'" download="'+fn+'">⬇ '+t('다운로드')+'</a><button class="btn" style="background:#ddd;color:#333" onclick="this.closest(\'.imgpop\').remove()">'+t('닫기')+'</button></div>';document.body.appendChild(d)}
 
@@ -548,7 +552,7 @@ function songView(){var td=today(),bd=C.sol,dt=dn(td[0],td[1],td[2])-dn(bd[0],bd
   var ln=x<-30?'오늘은 감정 리듬이 낮은 날이에요. 스스로에게 조금 더 다정해지세요.':x>30?'오늘은 감정이 맑은 날이에요. 그 에너지를 주변에 나눠 보세요.':'오늘은 차분하게 균형을 지키기 좋은 날이에요.';
   var h=hdr(t('오늘의 노래와 글귀'));
   var sk='oh_scr_'+td.join('-')+'_'+SGN,open_=!!ls(sk);
-  h+='<div class="c"><h2>'+t('오늘의 글귀')+(open_?'':' <small class="sub" style="font-weight:400;font-size:12px">✨ '+t('살살 긁어서 오늘의 글귀를 열어 보세요')+'</small>')+'</h2><div class="scr"><div class="q">“'+t(QP[w][(td[2]+SGN)%4])+'”</div><p class="sub" style="text-align:center">'+t(ln)+'</p>'+(open_?'<div class="stp"><div class="clv">'+CLV+'</div><span class="seal">'+esc(PINAME||t('파이오니어'))+'</span></div>':'<canvas id="scrc" data-k="'+sk+'"></canvas>')+'</div>'+(open_?'<button class="btn" onclick="saveQuote()">💾 '+t('글귀 카드 저장')+'</button>':'')+'</div>';
+  h+='<div class="c"><h2>'+t('오늘의 글귀')+(open_?'':' <small class="sub" style="font-weight:400;font-size:12px">✨ '+t('살살 긁어서 오늘의 글귀를 열어 보세요')+'</small>')+'</h2><div class="scr"><img id="qcard" alt="" style="display:block;width:100%;aspect-ratio:1080/1350;background:#fffaf0;border-radius:12px">'+(open_?'':'<canvas id="scrc" data-k="'+sk+'"></canvas>')+'</div>'+(open_?'<button class="btn" onclick="saveQuote()">💾 '+t('글귀 카드 저장')+'</button>':'')+'</div>';
   QSAVE={q:t(QP[w][(td[2]+SGN)%4]),l:t(ln),d:td};
   h+='<div class="c"><h2>'+t('오늘 나에게 맞는 노래 5곡')+'</h2><p class="sub">'+t('감정 리듬 {0}점',x)+' · '+z[1]+' '+t(z[0])+' · '+t('부족한 {0} 기운',ELT(w))+'</p>';
   pk.forEach(function(o,i){var q=encodeURIComponent(o.g[0]+' '+o.g[1]);h+='<div class="song"><b>'+(i+1)+'. '+esc(o.g[0])+'</b> <span class="sub">· '+esc(t(o.g[1]))+'</span><div class="sub">'+t(ML[o.g[2]])+(o.why.length?' · '+o.why.slice(0,2).join(' · '):'')+'</div><a href="https://www.youtube.com/results?search_query='+q+'" target="_blank" rel="noopener">▶ '+t('들어보기')+'</a></div>'});
