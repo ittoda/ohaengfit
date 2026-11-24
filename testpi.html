@@ -11,7 +11,7 @@ button:disabled{opacity:.5}#m{margin-top:14px;font-weight:700;min-height:24px}.s
 <script>
 var m=document.getElementById('m'),b=document.getElementById('b');
 async function go(){b.disabled=true;m.textContent='로그인 중… / Signing in…';var _t=setTimeout(function(){m.style.color='#c92a2a';m.textContent='파이 브라우저(Pi Browser)에서 열어 주세요\nPlease open this link in Pi Browser\nohaengfit-testnet.onrender.com';m.style.whiteSpace='pre-wrap';b.disabled=false},10000);
- try{await Pi.init({version:"2.0"});var a=await Pi.authenticate(['username'],function(){});clearTimeout(_t);
+ try{await Pi.init({version:"2.0"});var a=await Pi.authenticate(['username','payments','wallet_address'],function(){});clearTimeout(_t);
   m.textContent='보내는 중… / Sending…';
   var r=await (await fetch('/a2u',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:a.accessToken})})).json();
   if(r.ok){m.style.color='#2f9e44';m.textContent=r.again?'✅ 이미 받으셨어요. 고마워요! / Already received':'✅ 받으셨어요! 도와주셔서 고마워요 🙏 / Received!'}
