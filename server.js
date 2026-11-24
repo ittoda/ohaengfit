@@ -25,11 +25,13 @@ function redis(cmd){const url=upEnv('upstashredisresturl'),tok=upEnv('upstashred
     rq.on('error',()=>res(null));rq.on('timeout',()=>{rq.destroy();res(null)});rq.end(body)})}
 const ME_CACHE=new Map(); // 토큰 → uid (잠깐 기억해서 Pi 서버에 매번 묻지 않게)
 async function uidOf(token){if(!token)return null;const c=ME_CACHE.get(token);if(c&&Date.now()-c.t<3600e3)return c.uid;const me=await piMe(String(token));if(!me)return null;ME_CACHE.set(token,{uid:me.uid,t:Date.now()});return me.uid}
-// ===== 프리미엄: 항목별 0.1π 또는 50토큰, 한 번 열면 계속 =====
+// ===== 프리미엄: 항목별 0.1π 또는 50토큰, 오늘 하루 열림 (한국 자정에 다시 잠김) =====
 const PREM_ITEMS = ['body', 'food', 'ex', 'nut'], PREM_PI = 0.1, PREM_TOKENS = 50;
 async function getJSON(k, d) { try { const v = await redis(['GET', k]); return v ? JSON.parse(v) : d } catch (e) { return d } }
-async function unlocks(uid) { const a = await getJSON('oh:un:' + uid, []); return Array.isArray(a) ? a : [] }
-async function addUnlock(uid, item) { const a = await unlocks(uid); if (a.indexOf(item) < 0) a.push(item); await redis(['SET', 'oh:un:' + uid, JSON.stringify(a)]); return a }
+const kstDay = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // 한국 날짜
+async function unlockMap(uid) { const m = await getJSON('oh:un:' + uid, {}); return m && !Array.isArray(m) && typeof m === 'object' ? m : {} }
+async function unlocks(uid) { const m = await unlockMap(uid), d = kstDay(); return Object.keys(m).filter(k => m[k] === d) } // 오늘 연 항목만 (자정에 다시 잠김)
+async function addUnlock(uid, item) { const m = await unlockMap(uid); m[item] = kstDay(); await redis(['SET', 'oh:un:' + uid, JSON.stringify(m)]); return unlocks(uid) }
 function piApi(method, p, data) { // Pi 서버 결제 API (앱 키는 Render 환경변수 PI_API_KEY)
   const key = upEnv('piapikey'); if (!key) return Promise.resolve(null);
   return new Promise(res => { const b = data ? JSON.stringify(data) : '';
