@@ -25,7 +25,7 @@ function redis(cmd){const url=upEnv('upstashredisresturl'),tok=upEnv('upstashred
     const rq=https.request({host:u.host,path:u.pathname==='/'?'/':u.pathname,method:'POST',headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)},timeout:8000},r=>{let b='';r.on('data',d=>b+=d);r.on('end',()=>{try{res(JSON.parse(b).result)}catch(e){res(null)}})});
     rq.on('error',()=>res(null));rq.on('timeout',()=>{rq.destroy();res(null)});rq.end(body)})}
 const ME_CACHE=new Map(); // 토큰 → uid (잠깐 기억해서 Pi 서버에 매번 묻지 않게)
-async function uidOf(token){if(!token)return null;const c=ME_CACHE.get(token);if(c&&Date.now()-c.t<3600e3)return c.uid;const me=await piMe(String(token));if(!me)return null;ME_CACHE.set(token,{uid:me.uid,t:Date.now()});if(me.username)redis(['HSET','oh:names',me.uid,me.username]).catch(()=>{});return me.uid}
+async function uidOf(token){if(!token)return null;const c=ME_CACHE.get(token);if(c&&Date.now()-c.t<3600e3){stPi(c.uid);return c.uid}const me=await piMe(String(token));if(!me)return null;ME_CACHE.set(token,{uid:me.uid,t:Date.now()});stPi(me.uid);if(me.username)redis(['HSET','oh:names',me.uid,me.username]).catch(()=>{});return me.uid}
 // ===== 프리미엄: 항목별 0.1π 또는 100토큰, 오늘 하루 열림 (한국 자정에 다시 잠김) =====
 const AD_PT = 10, AD_MAX = 20; // 광고 1회 10토큰, 하루 20회
 function rankSet(uid, bal) { return redis(['ZADD', 'oh:rank', String(bal || 0), uid]).catch(() => null) } // 토큰 순위
@@ -45,12 +45,20 @@ async function finishPay(paymentId, txid) { // 결제 완료 처리 + 항목 열
   const p = await piApi('GET', '/payments/' + encodeURIComponent(paymentId)); if (!p) return null;
   const item = p.metadata && p.metadata.item; if (PREM_ITEMS.indexOf(item) < 0 || Number(p.amount) < PREM_PI) return null;
   if (!(p.status && p.status.developer_completed)) { const tx = txid || (p.transaction && p.transaction.txid); if (!tx) return null; const c = await piApi('POST', '/payments/' + encodeURIComponent(paymentId) + '/complete', { txid: tx }); if (!c) return null }
+  if ((await redis(['SET', SP + 'paid:' + paymentId, '1', 'NX', 'EX', '2592000'])) === 'OK') { stIncr('pay'); stIncr('payPi', Number(p.amount) || 0); redis(['HINCRBY', SP + 'item', item, '1']).catch(() => {}) }
   return addUnlock(p.user_uid, item);
 }
 // ===== 테스트넷 전용: 앱 → 사용자 테스트 파이 보내기 (메인넷 지갑 신청 조건: 5명) =====
 // Render 테스트넷 서비스에서 TESTNET=1, PI_API_KEY(테스트넷 앱 키), PI_WALLET_SEED(테스트넷 지갑 S...) 를 넣으면 작동
 const IS_TESTNET = !!upEnv('testnet');
 let PIB = null; function piBackend() { if (PIB) return PIB; try { const m = require('pi-backend'); const P = m.default || m; PIB = new P(upEnv('piapikey'), upEnv('piwalletseed')); } catch (e) { console.log('pi-backend', e.message) } return PIB }
+// ===== 사장님만 보는 통계 (/stats?key=...) — 맞고와 같은 방식, Upstash에 계속 저장 =====
+const STATS_KEY = upEnv('statskey') || 'a7c31e94';
+const SP = 'oh:st:' + (IS_TESTNET ? 't:' : ''); // 테스트넷 기록은 따로
+const stIncr = (k, n) => { const d = kstDay(); const c = n == null ? 'INCR' : 'INCRBYFLOAT', a = n == null ? [] : [String(n)]; redis([c, SP + k + ':' + d, ...a]).catch(() => {}); redis([c, SP + k + ':all', ...a]).catch(() => {}) };
+const stAdd = async (k, v) => { const d = kstDay(); redis(['SADD', SP + k + ':' + d, v]).catch(() => {}); return redis(['SADD', SP + k + ':all', v]).catch(() => 0) };
+const PI_SEEN = new Map(); // uid → 마지막으로 센 날짜
+function stPi(uid) { const d = kstDay(); if (PI_SEEN.get(uid) === d) return; PI_SEEN.set(uid, d); if (PI_SEEN.size > 20000) PI_SEEN.clear(); stAdd('pi', uid) }
 const A2U_DONE = new Set(); const A2U_NAMES = new Map();
 function body(req) { return new Promise(res => { let b = ''; req.on('data', d => { b += d; if (b.length > 1e4) req.destroy() }); req.on('end', () => { try { res(JSON.parse(b || '{}')) } catch (e) { res({}) } }) }) }
 http.createServer(async (req, res) => {
@@ -83,7 +91,7 @@ http.createServer(async (req, res) => {
     st.bal += award; st.last = today;
     const r = await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)]);
     if (r !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
-    rankSet(uid, st.bal);
+    rankSet(uid, st.bal); stIncr('ck');
     const o = JSON.parse(out(true, award)); o.un = await unlocks(uid); res.writeHead(200); return res.end(JSON.stringify(o));
   }
   if (url === '/rank' && req.method === 'POST') { // 토큰 순위 상위 20명 + 내 순위 (아이디는 일부 가려서)
@@ -108,7 +116,7 @@ http.createServer(async (req, res) => {
     if (st.adN >= AD_MAX) { res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'max', bal: st.bal, adN: st.adN, adMax: AD_MAX })); }
     st.adN++; st.bal = (st.bal || 0) + AD_PT;
     if ((await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)])) !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
-    rankSet(uid, st.bal); res.writeHead(200); return res.end(JSON.stringify({ ok: true, award: AD_PT, bal: st.bal, adN: st.adN, adMax: AD_MAX }));
+    rankSet(uid, st.bal); stIncr('ad'); res.writeHead(200); return res.end(JSON.stringify({ ok: true, award: AD_PT, bal: st.bal, adN: st.adN, adMax: AD_MAX }));
   }
   if (url === '/premium/token' && req.method === 'POST') { // 100토큰으로 열기
     const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
@@ -117,7 +125,7 @@ http.createServer(async (req, res) => {
     if (un.indexOf(q.item) >= 0) { res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, un })); }
     if ((st.bal || 0) < PREM_TOKENS) { res.writeHead(200); return res.end(JSON.stringify({ ok: false, why: 'bal', bal: st.bal || 0, un })); }
     st.bal -= PREM_TOKENS; if ((await redis(['SET', 'oh:pt:' + uid, JSON.stringify(st)])) !== 'OK') { res.writeHead(500); return res.end('{"ok":false}'); }
-    rankSet(uid, st.bal); un = await addUnlock(uid, q.item); res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, un }));
+    rankSet(uid, st.bal); stIncr('tk'); redis(['HINCRBY', SP + 'item', q.item, '1']).catch(() => {}); un = await addUnlock(uid, q.item); res.writeHead(200); return res.end(JSON.stringify({ ok: true, bal: st.bal, un }));
   }
   if (url === '/pay/approve' && req.method === 'POST') { // Pi 결제 승인
     const q = await body(req); const uid = await uidOf(q.token); res.setHeader('Content-Type', 'application/json');
@@ -129,6 +137,31 @@ http.createServer(async (req, res) => {
     const q = await body(req); res.setHeader('Content-Type', 'application/json');
     const un = q.paymentId ? await finishPay(String(q.paymentId), q.txid && String(q.txid)) : null;
     res.writeHead(un ? 200 : 400); return res.end(JSON.stringify({ ok: !!un, un }));
+  }
+  if (url === '/hit' && req.method === 'POST') { // 방문 기기 수 (기기마다 한 번씩, 이름·개인정보 없음)
+    const q = await body(req); const dev = String(q.d || '').replace(/[^\w-]/g, '').slice(0, 40);
+    if (dev) { const isNew = await stAdd('dev', dev); if (isNew === 1) redis(['HINCRBY', SP + 'lang', String(q.l || '?').replace(/[^\w-]/g, '').slice(0, 8) || '?', '1']).catch(() => {}) }
+    res.writeHead(204); return res.end();
+  }
+  if (url === '/stats') { // 사장님만 보는 통계
+    const q = new URL(req.url, 'http://x').searchParams;
+    if (q.get('key') !== STATS_KEY) { res.writeHead(404); return res.end('Not found'); }
+    const num = async k => Number(await redis(['GET', SP + k]) || 0), card = async k => Number(await redis(['SCARD', SP + k]) || 0);
+    const hash = async k => { const f = await redis(['HGETALL', SP + k]) || []; const o = []; for (let i = 0; i < f.length; i += 2) o.push([f[i], +f[i + 1]]); return o.sort((a, b) => b[1] - a[1]) };
+    const days = []; for (let i = 0; i < 7; i++) days.push(new Date(Date.now() + 9 * 3600e3 - i * 864e5).toISOString().slice(0, 10));
+    const row = async d => [d, await card('dev:' + d), await card('pi:' + d), await num('ck:' + d), await num('ad:' + d), await num('tk:' + d), await num('pay:' + d), Math.round(await num('payPi:' + d) * 100) / 100];
+    const [rows, T, items, langs, ranked] = await Promise.all([Promise.all(days.map(row)), row('all'), hash('item'), hash('lang'), redis(['ZCARD', 'oh:rank'])]);
+    const ok = !!upEnv('upstashredisresturl');
+    const IT = { body: '나의 몸', food: '음식', ex: '운동', nut: '영양', palm: '손금' };
+    const td = rows.map(r => '<tr>' + r.map(x => '<td>' + x + '</td>').join('') + '</tr>').join('');
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(`<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><title>오행핏 통계</title><style>body{font-family:sans-serif;background:#241446;color:#f3eeff;padding:16px;line-height:1.6}table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid #4a3480;padding:7px 3px;text-align:center}th{color:#c9b6ff;font-weight:600}b{color:#ffd66b;font-size:1.35em}.n{opacity:.65;font-size:.85em}.c{background:#33205e;border-radius:14px;padding:12px 14px;margin:12px 0}</style>
+<h2>🌿 오행핏 통계${IS_TESTNET ? ' (테스트넷)' : ''}</h2>
+<div class=c>누적 방문 기기 <b>${T[1]}</b> · 누적 Pi 로그인 <b>${T[2]}</b><br>출석 체크 <b>${T[3]}</b>회 · 광고 보상 <b>${T[4]}</b>회<br>토큰으로 열기 <b>${T[5]}</b>회 · 파이 결제 <b>${T[6]}</b>건 (<b>${T[7]}</b> π)<br>토큰 순위에 오른 사람 <b>${ranked || 0}</b>명</div>
+<table><tr><th>날짜</th><th>방문</th><th>Pi 로그인</th><th>출석</th><th>광고</th><th>토큰열기</th><th>결제</th><th>π</th></tr>${td}</table>
+<div class=c>프리미엄 많이 연 항목: ${items.length ? items.map(([k, v]) => (IT[k] || k) + ' <b>' + v + '</b>').join(' · ') : '아직 없어요'}</div>
+<div class=c>처음 방문한 기기 언어: ${langs.length ? langs.slice(0, 10).map(([k, v]) => k + ' <b>' + v + '</b>').join(' · ') : '아직 없어요'}</div>
+<p class=n>날짜는 한국 시간 기준 · 저장: ${ok ? 'Upstash (계속 유지)' : '저장소 연결 안 됨'} · 방문은 이 기능을 넣은 뒤부터 세요</p>`);
   }
   if (url === '/auth' && req.method === 'POST') {
     const { token } = await body(req); const me = token ? await piMe(String(token)) : null;

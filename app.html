@@ -693,6 +693,8 @@ function songView(){var td=today(),bd=C.sol,dt=dn(td[0],td[1],td[2])-dn(bd[0],bd
   h+='<button class="btn ghost" onclick="SGN++;render()">🎵 '+t('다른 곡 · 다른 글귀')+'</button></div>';
   return h}
 
+/* 방문 기기 수 세기 (사장님 통계용, 이름·개인정보 없이 기기마다 무작위 번호만) */
+try{var DV=ls('oh_dev');if(!DV){DV=Date.now().toString(36)+Math.random().toString(36).slice(2,10);ls('oh_dev',DV)}if(location.protocol.indexOf('http')==0)fetch('/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:DV,l:LANG})}).catch(function(){})}catch(e){}
 render();
 
 </script>
