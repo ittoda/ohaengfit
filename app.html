@@ -296,16 +296,16 @@ function homeView(){
    mi('gh','💞',t('궁합'),t('두 사람의 기운이 얼마나 잘 어울리는지 봐요'))+
    mi('today','🌤️',t('오늘의 운세'),t('{0}월 {1}일 재물·일·관계·건강',td[1],td[2]))+
    mi('song','🎵',t('오늘의 노래와 글귀'),t('오늘 기분과 오행에 맞는 노래 5곡'))+'</div>';
-  h+='<div class="c prem"><div class="sect"><b>👑 '+t('프리미엄')+'</b><span class="lock">'+t('항목당 0.1π 또는 50토큰')+'</span></div>'+
+  h+='<div class="c prem"><div class="sect"><b>👑 '+t('프리미엄')+'</b><span class="lock">'+(PREM_FREE?'🎁 FREE':t('항목당 0.1π 또는 50토큰'))+'</span></div>'+
    PREM.map(function(p){return pi(p)}).join('')+
    '<p class="note">'+t('건강 정보는 생활 관리를 위한 참고용이며 의료 상담을 대신하지 않아요.')+'</p></div>';
   h+='<p class="note" style="text-align:center">'+t('토정비결·사주·운세는 전통 계산법을 바탕으로 한 재미와 참고용이에요.')+'</p>';
   return h}
 function mi(v,ic,x,s){return '<button class="mi" onclick="go(\''+v+'\')"><span class="ic">'+ic+'</span><b>'+x+'</b><small>'+s+'</small></button>'}
-var UN=[],PREM=[['body','🧍','나의 몸 분석','생활패턴으로 보는 부위별 관리 포인트'],['food','🥗','나에게 맞는 음식','오행과 계절에 맞춘 오늘의 식사·음료'],['ex','💪','운동 따라하기','근육 그림을 보며 따라 하는 맞춤 운동'],['nut','🌿','영양 가이드','내 생활에 맞는 영양 성분 안내'],['palm','✋','손금 운명','손바닥을 찍어 보는 생명선·두뇌선·감정선·운명선']];
-function pi(p){var ok=UN.indexOf(p[0])>=0;return '<button class="pi" onclick="premium(\''+p[0]+'\')"><span class="ic">'+p[1]+'</span><div><b>'+t(p[2])+'</b><small>'+t(p[3])+'</small></div><span class="lock'+(ok?' ok':'')+'">'+(ok?'✓ '+t('오늘'):'🔒')+'</span></button>'}
+var PREM_FREE=true,UN=[],PREM=[['body','🧍','나의 몸 분석','생활패턴으로 보는 부위별 관리 포인트'],['food','🥗','나에게 맞는 음식','오행과 계절에 맞춘 오늘의 식사·음료'],['ex','💪','운동 따라하기','근육 그림을 보며 따라 하는 맞춤 운동'],['nut','🌿','영양 가이드','내 생활에 맞는 영양 성분 안내'],['palm','✋','손금 운명','손바닥을 찍어 보는 생명선·두뇌선·감정선·운명선']];
+function pi(p){var ok=PREM_FREE||UN.indexOf(p[0])>=0;return '<button class="pi" onclick="premium(\''+p[0]+'\')"><span class="ic">'+p[1]+'</span><div><b>'+t(p[2])+'</b><small>'+t(p[3])+'</small></div><span class="lock'+(ok?' ok':'')+'">'+(PREM_FREE?'FREE':ok?'✓ '+t('오늘'):'🔒')+'</span></button>'}
 function premOf(k){return PREM.filter(function(p){return p[0]==k})[0]}
-function premium(k){var p=premOf(k);if(!p)return;if(UN.indexOf(k)>=0)return openPrem(k);var bal=CK?CK.bal:0,tk=piTok();
+function premium(k){var p=premOf(k);if(!p)return;if(PREM_FREE||UN.indexOf(k)>=0)return openPrem(k);var bal=CK?CK.bal:0,tk=piTok();
   openSheet('<h2>👑 '+p[1]+' '+t(p[2])+'</h2><p class="p">'+t(p[3])+'</p><p class="p">'+t('오늘 하루 동안 볼 수 있어요. 자정에 다시 잠겨요.')+'</p>'+
    (tk?'<button class="btn pi2" id="pbPi" onclick="payPi(\''+k+'\')">π '+t('0.1 파이로 열기')+'</button><button class="btn gold" id="pbTk" '+(bal<50?'disabled ':'')+'onclick="payTk(\''+k+'\')">🪙 '+t('50 토큰으로 열기')+' <small style="font-weight:400">('+t('보유 {0} 토큰',bal)+')</small></button>'+(bal<50?'<p class="note" style="text-align:center">'+t('토큰이 부족해요. 출석 체크로 모아 보세요!')+'</p>':''):'<p class="note">'+t('Pi 브라우저에서 로그인해야 열 수 있어요')+'</p>')+
    '<p class="note">'+t('건강 정보는 생활 관리를 위한 참고용이며 의료 상담을 대신하지 않아요.')+'</p><button class="btn ghost" onclick="closeSheet()">'+t('닫기')+'</button>')}
