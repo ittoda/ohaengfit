@@ -708,11 +708,11 @@ try{var DV=ls('oh_dev');if(!DV){DV=Date.now().toString(36)+Math.random().toStrin
   var b='display:block;width:100%;margin-top:10px;padding:14px;border-radius:14px;font-size:16px;font-weight:700;border:0;text-decoration:none;text-align:center;box-sizing:border-box;';
   d.innerHTML='<div style="background:#fff;border-radius:22px;max-width:360px;width:100%;padding:26px 20px;text-align:center;color:#2b1d4a"><div style="font-size:44px">🌿</div><h2 style="margin:6px 0 8px;font-size:21px">'+T[0]+'</h2><p style="margin:0 0 10px;color:#6a5b8a;font-size:14px;line-height:1.5">'+T[1]+'</p>'+
    '<a id="opGo" href="'+go+'" style="'+b+'background:#7b4fd6;color:#fff">'+T[2]+'</a><button id="opCopy" style="'+b+'background:#efe8ff;color:#5b34b8">'+T[3]+'</button><a href="'+store+'" target="_blank" rel="noopener" style="'+b+'background:#fff;color:#7b4fd6;border:2px solid #d9ccff">'+T[4]+'</a>'+
-   '<p id="opHelp" hidden style="margin:12px 0 0;font-size:13px;color:#8a5a00;background:#fff6dc;border-radius:10px;padding:10px">'+T[6]+'</p><button id="opStay" style="margin-top:12px;background:none;border:0;color:#9a8cb8;font-size:14px;text-decoration:underline">'+T[5]+'</button></div>';
+   '<p id="opHelp" hidden style="margin:12px 0 0;font-size:13px;color:#8a5a00;background:#fff6dc;border-radius:10px;padding:10px">'+T[6]+'</p></div>';
   document.body.appendChild(d);
   document.getElementById('opGo').onclick=function(){setTimeout(function(){document.getElementById('opHelp').hidden=false},1800)};
   document.getElementById('opCopy').onclick=function(e){var u='https://'+H,el=e.target;try{navigator.clipboard.writeText(u).then(function(){el.textContent=T[7]},function(){prompt(T[3],u)})}catch(_){prompt(T[3],u)}};
-  document.getElementById('opStay').onclick=function(){d.remove()};
+  
 }catch(e){}})();
 render();
 
