@@ -1,6 +1,20 @@
 // 오행핏 서버: 화면 파일 제공 + Pi 주소 확인 + Pi 로그인 확인 (프리미엄 결제는 다음 단계에서)
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path');
 const PORT = process.env.PORT || 8080;
+// 전송량 줄이기: 같은 파일이면 304(다시 안 받음), 글자 파일은 gzip 압축
+const _zlib = require('zlib'), _crypto = require('crypto'), _GZ = new Map();
+function sendBuf(req, res, buf, type, cache) {
+  if (!Buffer.isBuffer(buf)) buf = Buffer.from(String(buf), 'utf8');
+  const tag = '"' + _crypto.createHash('md5').update(buf).digest('base64').slice(0, 22) + '"';
+  const h = { 'Content-Type': type, 'Cache-Control': cache || 'no-cache', 'ETag': tag, 'Vary': 'Accept-Encoding' };
+  if (String(req.headers['if-none-match'] || '').split(/\s*,\s*/).includes(tag)) { res.writeHead(304, h); return res.end() }
+  if (/text|javascript|json|svg|xml/.test(type) && buf.length > 1024 && /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''))) {
+    let z = _GZ.get(tag); if (!z) { z = _zlib.gzipSync(buf, { level: 9 }); if (_GZ.size > 40) _GZ.clear(); _GZ.set(tag, z) }
+    h['Content-Encoding'] = 'gzip'; h['Content-Length'] = z.length; res.writeHead(200, h); return res.end(req.method === 'HEAD' ? undefined : z);
+  }
+  h['Content-Length'] = buf.length; res.writeHead(200, h); res.end(req.method === 'HEAD' ? undefined : buf);
+}
+
 const FILES = {
   '/': ['app.html', 'text/html; charset=utf-8'], '/index.html': ['app.html', 'text/html; charset=utf-8'],
   '/app.html': ['app.html', 'text/html; charset=utf-8'], '/premium.html': ['premium.html', 'text/html; charset=utf-8'],
@@ -202,7 +216,6 @@ http.createServer(async (req, res) => {
   if (!f) { res.writeHead(404); return res.end('Not found'); }
   fs.readFile(path.join(__dirname, f[0]), (err, buf) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': f[1], 'Cache-Control': f[1].startsWith('audio') ? 'public, max-age=86400' : 'no-cache', 'Content-Length': buf.length });
-    res.end(buf);
+    sendBuf(req, res, buf, f[1], /^(audio|image)/.test(f[1]) ? 'public, max-age=604800' : 'no-cache');
   });
 }).listen(PORT, () => console.log('ohaengfit on', PORT));
