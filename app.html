@@ -281,10 +281,14 @@ function infoLine(){var s=C.sol,l=C.lun;
 /* ===== 출석 체크 (하루 10토큰, 7일째 +30) ===== */
 var CK=null,CKBUSY=false;
 function ckApi(peek){var tk=piTok();if(!tk)return Promise.resolve(null);return fetch('/checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tk,peek:peek?1:0})}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})}
-function ckLoad(){ckApi(1).then(function(r){if(r&&r.ok){CK=r;if(r.un)UN=r.un;if(VIEW=='home')render()}})}
-function ckDo(){if(CKBUSY||!CK||CK.done)return;CKBUSY=true;render();ckApi(0).then(function(r){CKBUSY=false;if(r&&r.ok){CK=r;if(r.un)UN=r.un;if(r.award)toast(r.award>10?t('+{0} 토큰 받았어요!',r.award)+'\n'+t('7일 연속 보너스 +30 🎉'):t('+{0} 토큰 받았어요!',r.award))}render()})}
+function ckDay(){return new Date(Date.now()+9*3600e3).toISOString().slice(0,10)}
+function ckMark(r){try{if(r&&r.done)localStorage.setItem('oh_ckd',ckDay())}catch(e){}}
+function ckDoneLocal(){try{return localStorage.getItem('oh_ckd')===ckDay()}catch(e){return false}}
+function ckLoad(){ckApi(1).then(function(r){if(r&&r.ok){CK=r;ckMark(r);if(r.un)UN=r.un;if(VIEW=='home')render()}})}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&piTok())ckLoad()});
+function ckDo(){if(CKBUSY||!CK||CK.done)return;CKBUSY=true;render();ckApi(0).then(function(r){CKBUSY=false;if(r&&r.ok){CK=r;ckMark(r);if(r.un)UN=r.un;if(r.award)toast(r.award>10?t('+{0} 토큰 받았어요!',r.award)+'\n'+t('7일 연속 보너스 +30 🎉'):t('+{0} 토큰 받았어요!',r.award))}render()})}
 function toast(m){var d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(function(){d.classList.add('on')},20);setTimeout(function(){d.classList.remove('on');setTimeout(function(){d.remove()},400)},2600)}
-function ckCard(){if(!piTok()&&!CK)return '';var c=CK||{bal:0,streak:0,done:false},h='<div class="c ck"><div class="sect"><b>📅 '+t('출석 체크')+'</b><span class="bal"><span class="coin">'+LOGO+'</span>'+c.bal+' '+t('토큰')+'</span></div><div class="days">';
+function ckCard(){if(!piTok()&&!CK)return '';var c=CK||{bal:0,streak:0,done:ckDoneLocal()},h='<div class="c ck"><div class="sect"><b>📅 '+t('출석 체크')+'</b><span class="bal"><span class="coin">'+LOGO+'</span>'+c.bal+' '+t('토큰')+'</span></div><div class="days">';
   for(var i=1;i<=7;i++){var on=i<=c.streak;h+='<div class="dy'+(on?' on':'')+(i==7?' gift':'')+'"><span>'+(on?'✓':i==7?'🎁':i)+'</span><small>'+(i==7?'+40':'+10')+'</small></div>'}
   h+='</div><p class="sub" style="margin:8px 0 0;text-align:center">'+(c.streak?t('{0}일 연속 출석 중',c.streak)+' · ':'')+t('7일 연속 출석하면 총 100 토큰!')+'</p>';
   h+='<button class="btn"'+(c.done||CKBUSY||!CK?' disabled':'')+' onclick="ckDo()">'+(c.done?t('오늘 출석 완료 ✓'):t('오늘 출석하기 +{0}',c.streak>=6&&c.streak<7?40:10))+'</button>';
